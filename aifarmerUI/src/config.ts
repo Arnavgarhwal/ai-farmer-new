@@ -3,7 +3,7 @@ const isDevelopment = window.location.hostname === 'localhost' || window.locatio
 
 export const API_BASE_URL = isDevelopment 
   ? 'http://localhost:5000' 
-  : 'https://ai-farmer-new.onrender.com';
+  : 'https://intellifarm-backend-4vhv.onrender.com';
 
 export const API_ENDPOINTS = {
   TRACK_VISIT: `${API_BASE_URL}/api/track-visit`,

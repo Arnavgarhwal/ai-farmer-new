@@ -4,6 +4,7 @@ import CropSuggestionsModal from "./CropSuggestionsModal";
 import EquipmentGuideModal from "./EquipmentGuideModal";
 import CostAnalysisModal from "./CostAnalysisModal";
 import YieldPredictionModal from "./YieldPredictionModal";
+import MLPricePredictionModal from "./MLPricePredictionModal";
 import WeatherUpdatesModal from "./WeatherUpdatesModal";
 import HarvestPlanningModal from "./HarvestPlanningModal";
 import NearbyMarketplaceModal from "./NearbyMarketplaceModal";
@@ -872,6 +873,7 @@ const equipmentCategories = ["All", "Machinery", "Crop Care", "Planting", "Energ
 const features = [
   { name: "Crop Suggestions", icon: "🌾" },
   { name: "Yield Prediction", icon: "📊" },
+  { name: "ML Price Prediction", icon: "🤖" },
   { name: "Irrigation Advice", icon: "💧" },
   { name: "Equipment Guide", icon: "🚜" },
   { name: "Cost Analysis", icon: "💰" },
@@ -940,6 +942,9 @@ const App: React.FC = () => {
 
   // Yield Prediction Modal State
   const [showYieldPredictionModal, setShowYieldPredictionModal] = useState(false);
+
+  // ML Price Prediction Modal State
+  const [showMLPricePredictionModal, setShowMLPricePredictionModal] = useState(false);
 
   // Weather Updates Modal State
   const [showWeatherUpdatesModal, setShowWeatherUpdatesModal] = useState(false);
@@ -1113,6 +1118,15 @@ const App: React.FC = () => {
 
   const handleCloseYieldPrediction = () => {
     setShowYieldPredictionModal(false);
+  };
+
+  const handleShowMLPricePrediction = () => {
+    setShowFeatures(false);
+    setShowMLPricePredictionModal(true);
+  };
+
+  const handleCloseMLPricePrediction = () => {
+    setShowMLPricePredictionModal(false);
   };
 
   const handleShowWeatherUpdates = () => {
@@ -1656,6 +1670,8 @@ const App: React.FC = () => {
                     handleShowCostAnalysis();
                   } else if (feature.name === "Yield Prediction") {
                     handleShowYieldPrediction();
+                  } else if (feature.name === "ML Price Prediction") {
+                    handleShowMLPricePrediction();
                   } else if (feature.name === "Weather Updates") {
                     handleShowWeatherUpdates();
                   } else if (feature.name === "Harvest Planning") {
@@ -1915,6 +1931,12 @@ const App: React.FC = () => {
         onClose={handleCloseYieldPrediction}
         crops={cropDatabase}
         categories={cropCategories}
+      />
+
+      {/* ML Price Prediction Modal */}
+      <MLPricePredictionModal
+        show={showMLPricePredictionModal}
+        onClose={handleCloseMLPricePrediction}
       />
 
       {/* Weather Updates Modal */}

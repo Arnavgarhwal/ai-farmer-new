@@ -4,6 +4,12 @@ import json
 import os
 from datetime import datetime, timedelta
 import random
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
 
 app = Flask(__name__)
 
@@ -13,6 +19,91 @@ CORS(app, origins="*", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 # Simple file-based storage
 DATA_FILE = "data.json"
 VISITOR_LOG_FILE = "visitor_log.json"
+
+# ML Model Setup
+def initialize_ml_models():
+    """Initialize ML models for price prediction"""
+    print("🤖 Initializing ML models for price prediction...")
+    
+    # Mock database for mandi prices
+    crop_data = pd.DataFrame({
+        'mandi_id': [1, 1, 2, 2, 3, 3, 4, 4],
+        'mandi_name': ['Azadpur Mandi', 'Azadpur Mandi', 'Nagpur APMC', 'Nagpur APMC', 
+                      'Bangalore APMC', 'Bangalore APMC', 'Chennai Koyambedu', 'Chennai Koyambedu'],
+        'state': ['Delhi', 'Delhi', 'Maharashtra', 'Maharashtra', 
+                 'Karnataka', 'Karnataka', 'Tamil Nadu', 'Tamil Nadu'],
+        'district': ['North Delhi', 'North Delhi', 'Nagpur', 'Nagpur', 
+                    'Bangalore Urban', 'Bangalore Urban', 'Chennai', 'Chennai'],
+        'crop': ['Tomato', 'Onion', 'Tomato', 'Onion', 
+                'Tomato', 'Potato', 'Onion', 'Potato'],
+        'min_price': [1200, 1800, 1100, 1700, 1150, 1600, 1250, 1550],
+        'max_price': [1500, 2200, 1400, 2100, 1450, 1900, 1600, 1800],
+        'modal_price': [1350, 2000, 1250, 1900, 1300, 1750, 1400, 1650],
+        'last_updated': ['2023-11-20']*8
+    })
+
+    # Historical data for ML training (mock - in production use real historical data)
+    date_range = pd.date_range(end=datetime.today(), periods=365*3)
+    historical_data = pd.DataFrame({
+        'date': np.random.choice(date_range, 1000),
+        'mandi_id': np.random.randint(1, 5, 1000),
+        'crop': np.random.choice(['Tomato', 'Onion', 'Potato'], 1000),
+        'modal_price': np.random.randint(1000, 2500, 1000),
+        'rainfall': np.random.uniform(0, 50, 1000),
+        'temperature': np.random.uniform(15, 35, 1000)
+    })
+
+    # Train ML models for each crop-mandi combination
+    models = {}
+
+    for crop in ['Tomato', 'Onion', 'Potato']:
+        for mandi in [1, 2, 3, 4]:
+            # Filter data for this crop-mandi combination
+            data = historical_data[(historical_data['crop'] == crop) & 
+                                  (historical_data['mandi_id'] == mandi)].copy()
+            
+            if len(data) > 10:  # Only train if we have enough data
+                # Feature engineering
+                data['day_of_year'] = data['date'].dt.dayofyear
+                data['month'] = data['date'].dt.month
+                data['year'] = data['date'].dt.year
+                
+                # Split into features and target
+                X = data[['day_of_year', 'month', 'year', 'rainfall', 'temperature']]
+                y = data['modal_price']
+                
+                # Train-test split
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=0.2, random_state=42)
+                
+                # Train model
+                model = RandomForestRegressor(n_estimators=100, random_state=42)
+                model.fit(X_train, y_train)
+                
+                # Evaluate
+                y_pred = model.predict(X_test)
+                mae = mean_absolute_error(y_test, y_pred)
+                print(f"✅ Trained model for {crop} at mandi {mandi} - MAE: {mae:.2f}")
+                
+                # Store model
+                models[(crop, mandi)] = model
+
+    # Save models to disk
+    try:
+        joblib.dump(models, 'crop_price_models.pkl')
+        print("💾 ML models saved successfully")
+    except Exception as e:
+        print(f"⚠️ Could not save models: {e}")
+    
+    return models, crop_data
+
+# Initialize ML models
+try:
+    ml_models, mandi_data = initialize_ml_models()
+    print("🎯 ML models initialized successfully")
+except Exception as e:
+    print(f"❌ Error initializing ML models: {e}")
+    ml_models, mandi_data = {}, pd.DataFrame()
 
 def load_data():
     """Load data from JSON file"""
@@ -206,7 +297,7 @@ def admin_dashboard():
             ],
             "system_stats": {
                 "uptime": "24 hours",
-                "version": "1.0.0",
+                "version": "2.0.0",
                 "last_backup": datetime.now().isoformat()
             }
         }
@@ -216,9 +307,170 @@ def admin_dashboard():
     except Exception as e:
         return jsonify({"error": f"Failed to load dashboard: {str(e)}"}), 500
 
-@app.route('/api/schemes', methods=['GET'])
+# ML Price Prediction Endpoints
+@app.route('/api/mandis', methods=['GET', 'OPTIONS'])
+def get_mandis():
+    """Get list of all mandis"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        mandis = mandi_data[['mandi_id', 'mandi_name', 'state', 'district']].drop_duplicates()
+        return jsonify(mandis.to_dict(orient='records'))
+    except Exception as e:
+        return jsonify({"error": f"Failed to get mandis: {str(e)}"}), 500
+
+@app.route('/api/crops', methods=['GET', 'OPTIONS'])
+def get_crops():
+    """Get list of all crops"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        crops = mandi_data['crop'].unique().tolist()
+        return jsonify(crops)
+    except Exception as e:
+        return jsonify({"error": f"Failed to get crops: {str(e)}"}), 500
+
+@app.route('/api/current_prices', methods=['GET', 'OPTIONS'])
+def get_current_prices():
+    """Get current prices for all crops in all mandis"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        return jsonify(mandi_data.to_dict(orient='records'))
+    except Exception as e:
+        return jsonify({"error": f"Failed to get current prices: {str(e)}"}), 500
+
+@app.route('/api/mandi_prices', methods=['GET', 'OPTIONS'])
+def get_mandi_prices():
+    """Get prices for specific mandi"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        mandi_id = request.args.get('mandi_id')
+        if not mandi_id:
+            return jsonify({'error': 'mandi_id parameter required'}), 400
+        
+        prices = mandi_data[mandi_data['mandi_id'] == int(mandi_id)]
+        return jsonify(prices.to_dict(orient='records'))
+    except Exception as e:
+        return jsonify({"error": f"Failed to get mandi prices: {str(e)}"}), 500
+
+@app.route('/api/crop_prices', methods=['GET', 'OPTIONS'])
+def get_crop_prices():
+    """Get prices for specific crop across all mandis"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        crop = request.args.get('crop')
+        if not crop:
+            return jsonify({'error': 'crop parameter required'}), 400
+        
+        prices = mandi_data[mandi_data['crop'] == crop]
+        return jsonify(prices.to_dict(orient='records'))
+    except Exception as e:
+        return jsonify({"error": f"Failed to get crop prices: {str(e)}"}), 500
+
+@app.route('/api/predict', methods=['POST', 'OPTIONS'])
+def predict_prices():
+    """Predict prices for next 3 months"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        data = request.json
+        mandi_id = data.get('mandi_id')
+        crop = data.get('crop')
+        harvest_date = data.get('harvest_date')
+        
+        if not all([mandi_id, crop, harvest_date]):
+            return jsonify({'error': 'mandi_id, crop and harvest_date required'}), 400
+        
+        try:
+            harvest_date = datetime.strptime(harvest_date, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        # Check if we have a model for this crop-mandi combination
+        model_key = (crop, int(mandi_id))
+        if model_key not in ml_models:
+            return jsonify({'error': f'No prediction model available for {crop} at this mandi'}), 400
+        
+        # Generate predictions for next 90 days
+        prediction_dates = [harvest_date + timedelta(days=i) for i in range(90)]
+        
+        predictions = []
+        for date in prediction_dates:
+            # In production, you would fetch actual weather forecasts
+            weather_data = {
+                'rainfall': np.random.uniform(0, 50),
+                'temperature': np.random.uniform(15, 35)
+            }
+            
+            features = {
+                'day_of_year': date.dayofyear,
+                'month': date.month,
+                'year': date.year,
+                'rainfall': weather_data['rainfall'],
+                'temperature': weather_data['temperature']
+            }
+            
+            # Convert to DataFrame for prediction
+            X_pred = pd.DataFrame([features])
+            
+            # Make prediction
+            predicted_price = ml_models[model_key].predict(X_pred)[0]
+            
+            predictions.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'predicted_price': round(float(predicted_price), 2),
+                'rainfall': round(float(weather_data['rainfall']), 1),
+                'temperature': round(float(weather_data['temperature']), 1)
+            })
+        
+        return jsonify({
+            'mandi_id': mandi_id,
+            'crop': crop,
+            'predictions': predictions
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to predict prices: {str(e)}"}), 500
+
+@app.route('/api/weather', methods=['GET', 'OPTIONS'])
+def get_weather():
+    """Get weather forecast (mock)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    try:
+        # In production, integrate with actual weather API
+        lat = request.args.get('lat')
+        lon = request.args.get('lon')
+        
+        if not lat or not lon:
+            return jsonify({'error': 'lat and lon parameters required'}), 400
+        
+        # Mock weather data
+        forecast = []
+        for i in range(14):  # 14 day forecast
+            date = (datetime.today() + timedelta(days=i)).strftime('%Y-%m-%d')
+            forecast.append({
+                'date': date,
+                'rainfall': round(np.random.uniform(0, 20), 1),
+                'temperature': round(np.random.uniform(20, 35), 1),
+                'humidity': round(np.random.uniform(40, 90), 1)
+            })
+        
+        return jsonify({
+            'location': {'lat': lat, 'lon': lon},
+            'forecast': forecast
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to get weather: {str(e)}"}), 500
+
+# Keep existing endpoints for backward compatibility
+@app.route('/api/schemes', methods=['GET', 'OPTIONS'])
 def get_schemes():
     """Get all government schemes"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         db_data = load_data()
         schemes = db_data.get("schemes", [])
@@ -229,109 +481,82 @@ def get_schemes():
                 {
                     "id": 1,
                     "name": "PM-KISAN",
-                    "description": "Direct income support for farmers",
+                    "description": "Direct income support of Rs. 6000 per year to farmers",
                     "category": "Income Support",
-                    "status": "Active"
+                    "eligibility": "Small and marginal farmers",
+                    "amount": "Rs. 6000/year",
+                    "deadline": "2024-12-31"
                 },
                 {
                     "id": 2,
                     "name": "PM Fasal Bima Yojana",
-                    "description": "Crop insurance scheme",
+                    "description": "Crop insurance scheme for farmers",
                     "category": "Insurance",
-                    "status": "Active"
+                    "eligibility": "All farmers",
+                    "amount": "Up to 100% coverage",
+                    "deadline": "Ongoing"
                 }
             ]
         
-        return jsonify({"schemes": schemes})
-        
+        return jsonify(schemes)
     except Exception as e:
-        return jsonify({"error": f"Failed to load schemes: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to get schemes: {str(e)}"}), 500
 
-@app.route('/api/crops', methods=['GET'])
-def get_crops():
-    """Get crop recommendations"""
+@app.route('/api/weather-updates', methods=['GET', 'OPTIONS'])
+def get_weather_updates():
+    """Get weather updates"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
-        # Mock crop data
-        crops = [
-            {
-                "name": "Rice",
-                "season": "Kharif",
-                "investment": "Medium",
-                "profit_margin": "25-30%"
-            },
-            {
-                "name": "Wheat",
-                "season": "Rabi", 
-                "investment": "Medium",
-                "profit_margin": "20-25%"
-            },
-            {
-                "name": "Cotton",
-                "season": "Kharif",
-                "investment": "High",
-                "profit_margin": "30-40%"
-            }
-        ]
-        
-        return jsonify({"crops": crops})
-        
-    except Exception as e:
-        return jsonify({"error": f"Failed to load crops: {str(e)}"}), 500
-
-@app.route('/api/weather', methods=['GET'])
-def get_weather():
-    """Get weather forecast"""
-    try:
-        # Mock weather data
         weather_data = {
-            "location": "Mumbai, Maharashtra",
             "current": {
-                "temperature": 28,
-                "humidity": 75,
-                "condition": "Partly Cloudy"
+                "temperature": random.randint(20, 35),
+                "humidity": random.randint(40, 80),
+                "condition": random.choice(["Sunny", "Cloudy", "Rainy", "Partly Cloudy"])
             },
             "forecast": [
-                {"date": "2024-01-15", "high": 30, "low": 24, "condition": "Sunny"},
-                {"date": "2024-01-16", "high": 29, "low": 23, "condition": "Cloudy"},
-                {"date": "2024-01-17", "high": 27, "low": 22, "condition": "Rain"}
+                {
+                    "date": (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d"),
+                    "temperature": random.randint(18, 38),
+                    "condition": random.choice(["Sunny", "Cloudy", "Rainy", "Partly Cloudy"])
+                } for i in range(7)
             ]
         }
-        
         return jsonify(weather_data)
-        
     except Exception as e:
-        return jsonify({"error": f"Failed to load weather: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to get weather updates: {str(e)}"}), 500
 
-@app.route('/api/market-prices', methods=['GET'])
+@app.route('/api/market-prices', methods=['GET', 'OPTIONS'])
 def get_market_prices():
-    """Get current market prices"""
+    """Get market prices"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
-        # Mock market price data
         prices = [
-            {"crop": "Rice", "price": "₹1800/quintal", "trend": "up"},
-            {"crop": "Wheat", "price": "₹1900/quintal", "trend": "stable"},
-            {"crop": "Cotton", "price": "₹5500/quintal", "trend": "down"}
+            {"crop": "Rice", "price": random.randint(1500, 2500), "unit": "per quintal"},
+            {"crop": "Wheat", "price": random.randint(1800, 2200), "unit": "per quintal"},
+            {"crop": "Corn", "price": random.randint(1200, 1800), "unit": "per quintal"}
         ]
-        
-        return jsonify({"prices": prices})
-        
+        return jsonify(prices)
     except Exception as e:
-        return jsonify({"error": f"Failed to load market prices: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to get market prices: {str(e)}"}), 500
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """Health check endpoint"""
+    if request.method == 'OPTIONS':
+        return '', 200
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
+        "version": "2.0.0",
+        "features": ["visitor_tracking", "admin_dashboard", "ml_price_prediction", "weather_forecast"]
     })
 
 if __name__ == '__main__':
     print("🚀 Starting AI Farmer Backend Server...")
     print("✅ No database required - using file-based storage")
+    print("🤖 ML models loaded for price prediction")
     print("🌐 Server will be available at: http://127.0.0.1:5000")
     print("🔑 Default admin credentials: arnavgarhwal / @Ag12345")
-    
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host='0.0.0.0', port=port) 
+    app.run(debug=True, host='0.0.0.0', port=5000) 
