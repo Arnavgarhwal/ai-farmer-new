@@ -7,8 +7,12 @@ import YieldPredictionModal from "./YieldPredictionModal";
 import WeatherUpdatesModal from "./WeatherUpdatesModal";
 import HarvestPlanningModal from "./HarvestPlanningModal";
 import NearbyMarketplaceModal from "./NearbyMarketplaceModal";
+import AdminDashboard from "./AdminDashboard";
 import i18n from "./i18n";
 import { useTranslation } from 'react-i18next';
+import './App.css';
+import MonkeyPasswordInput from './MonkeyPasswordInput';
+import API_ENDPOINTS from './config';
 
 // List of all Indian States and Union Territories
 const indianStates = [
@@ -948,6 +952,11 @@ const App: React.FC = () => {
 
   // Admin Login Modal State
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
   // Theme state
   const [theme, setTheme] = useState<'bright' | 'dark'>('bright');
@@ -963,6 +972,32 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
+  // Check if admin is already logged in
+  React.useEffect(() => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      setIsAdminLoggedIn(true);
+    }
+  }, []);
+
+  // Track visit when app loads
+  React.useEffect(() => {
+    const trackVisit = async () => {
+      try {
+        await fetch(API_ENDPOINTS.TRACK_VISIT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      } catch (error) {
+        console.error('Failed to track visit:', error);
+      }
+    };
+    
+    trackVisit();
+  }, []);
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value);
     if (i18n && i18n.changeLanguage) {
@@ -977,6 +1012,45 @@ const App: React.FC = () => {
     console.log("Crop Name:", cropName);
     console.log("Harvesting Date:", harvestingDate);
     // Here you can add logic to process the form data
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+
+    try {
+      const response = await fetch(API_ENDPOINTS.ADMIN_LOGIN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: adminUsername, password: adminPassword }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed. Please check your credentials.');
+      }
+
+      console.log("Login successful, token:", data.token);
+      setShowAdminLoginModal(false);
+      setAdminUsername("");
+      setAdminPassword("");
+      setIsAdminLoggedIn(true);
+      localStorage.setItem('adminToken', data.token);
+      alert('Admin login successful!');
+
+    } catch (error) {
+      if (error instanceof Error) {
+        setLoginError(error.message);
+      } else {
+        setLoginError("An unknown error occurred.");
+      }
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   // Reset form fields
@@ -1081,353 +1155,359 @@ const App: React.FC = () => {
       background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
-      <div style={{ maxWidth: 840, margin: '0 auto', padding: '0 20px' }}>
-        {/* Header */}
-        <header style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "32px 0 24px 0",
-          background: "none"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <img src="/logo.png" alt="Intellifarm Systems Logo" style={{ height: 48, marginRight: 12 }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Language Selector */}
-            <select
-              value={language}
-              onChange={handleLanguageChange}
-              style={{
-                padding: "8px 12px",
-                border: "1px solid #d1d5db",
-                borderRadius: 8,
-                fontSize: 15,
-                background: "#fff",
-                color: "#14532d",
-                fontWeight: 600,
-                cursor: "pointer"
-              }}
-              aria-label="Select language"
-            >
-              <option value="en">English</option>
-              <option value="hi">हिन्दी</option>
-              <option value="mr">मराठी</option>
-              <option value="te">తెలుగు</option>
-              <option value="kn">ಕನ್ನಡ</option>
-            </select>
-            <button
-              onClick={() => setShowFeatures(v => !v)}
-              style={{
-                background: "rgba(34, 197, 94, 0.1)",
-                border: "1px solid rgba(34, 197, 94, 0.2)",
-                borderRadius: 10,
-                width: 48,
-                height: 48,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                gap: 4
-              }}
-              aria-label="More features"
-            >
-              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
-              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
-              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
-            </button>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "80px 0px",
-          margin: "0 auto"
-        }}>
-          <h1 style={{
-            color: "#16a34a",
-            fontWeight: 800,
-            fontSize: "clamp(32px, 5vw, 48px)",
-            lineHeight: 1.2,
-            marginBottom: 16,
-            letterSpacing: "-0.025em"
-          }}>
-            {t('welcome')}
-          </h1>
-          <p style={{
-            color: "#6B7280",
-            fontSize: 18,
-            lineHeight: 1.6,
-            margin: 0,
-            fontWeight: 400,
-            marginBottom: 32
-          }}>
-            {t('subtitle', 'Your one-stop platform for smart, sustainable, and profitable farming. Explore features using the menu above.')}
-          </p>
-
-          {/* Crop Information Form */}
-          <section style={{
-            background: "#fff",
-            borderRadius: 16,
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 4px 12px rgba(34, 197, 94, 0.08)",
-            padding: 32,
-            marginBottom: 40,
-            width: "100%",
-            maxWidth: 500
-          }}>
-            <h2 style={{
-              color: "#16a34a",
-              fontWeight: 700,
-              fontSize: 24,
-              marginBottom: 24,
-              textAlign: "center"
+      {isAdminLoggedIn ? (
+        <AdminDashboard />
+      ) : (
+        <>
+          <div style={{ maxWidth: 840, margin: '0 auto', padding: '0 20px' }}>
+            {/* Header */}
+            <header style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "32px 0 24px 0",
+              background: "none"
             }}>
-              {t('cropInformation')}
-            </h2>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div>
-                <label htmlFor="userState" style={{
-                  display: "block",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  marginBottom: 8
-                }}>
-                  {t('yourState', 'Your State')}
-                </label>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <img src="/logo.png" alt="Intellifarm Systems Logo" style={{ height: 48, marginRight: 12 }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {/* Language Selector */}
                 <select
-                  id="userState"
-                  value={userState}
-                  onChange={(e) => setUserState(e.target.value)}
+                  value={language}
+                  onChange={handleLanguageChange}
                   style={{
-                    width: "100%",
-                    padding: "12px 16px",
+                    padding: "8px 12px",
                     border: "1px solid #d1d5db",
                     borderRadius: 8,
-                    fontSize: 16,
-                    outline: "none",
-                    transition: "border-color 0.2s ease",
-                    boxSizing: "border-box"
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#16a34a";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#d1d5db";
-                  }}
-                >
-                  <option value="">{t('selectYourState', 'Select your state')}</option>
-                  {indianStates.map((state, idx) => (
-                    <option key={idx} value={state}>{state}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="userDistrict" style={{
-                  display: "block",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  marginBottom: 8
-                }}>
-                  {t('yourDistrict', 'Your District')}
-                </label>
-                <input
-                  type="text"
-                  id="userDistrict"
-                  value={userDistrict}
-                  onChange={(e) => setUserDistrict(e.target.value)}
-                  placeholder={t('enterYourDistrict', 'Enter your district')}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    outline: "none",
-                    transition: "border-color 0.2s ease",
-                    boxSizing: "border-box"
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#16a34a";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#d1d5db";
-                  }}
-                />
-              </div>
-              <div>
-                <label htmlFor="cropName" style={{
-                  display: "block",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  marginBottom: 8
-                }}>
-                  {t('cropName', 'Crop Name')}
-                </label>
-                <input
-                  type="text"
-                  id="cropName"
-                  value={cropName}
-                  onChange={(e) => setCropName(e.target.value)}
-                  placeholder={t('enterCropName', 'Enter crop name (e.g., Wheat, Rice, Corn)')}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    outline: "none",
-                    transition: "border-color 0.2s ease",
-                    boxSizing: "border-box"
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#16a34a";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#d1d5db";
-                  }}
-                />
-              </div>
-              <div>
-                <label htmlFor="harvestingDate" style={{
-                  display: "block",
-                  color: "#374151",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  marginBottom: 8
-                }}>
-                  {t('harvestingDate', 'Harvesting Date')}
-                </label>
-                <input
-                  type="date"
-                  id="harvestingDate"
-                  value={harvestingDate}
-                  onChange={(e) => setHarvestingDate(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 8,
-                    fontSize: 16,
-                    outline: "none",
-                    transition: "border-color 0.2s ease",
-                    boxSizing: "border-box"
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#16a34a";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#d1d5db";
-                  }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    padding: "12px 0",
-                    border: "none",
-                    borderRadius: 8,
-                    boxShadow: "0 2px 8px #bbf7d0",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {t('getPricePrediction')}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  style={{
-                    flex: 1,
-                    background: "#f1f5f9",
-                    color: "#16a34a",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    padding: "12px 0",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 8,
-                    boxShadow: "0 2px 8px #e0f2fe",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {t('reset')}
-                </button>
-              </div>
-            </form>
-          </section>
-        </main>
-
-        <div style={{ textAlign: 'center', marginTop: 40 }}>
-            <button
-                onClick={() => setShowAdminLoginModal(true)}
-                style={{
-                    background: 'transparent',
-                    color: '#16a34a',
+                    fontSize: 15,
+                    background: "#fff",
+                    color: "#14532d",
                     fontWeight: 600,
-                    fontSize: 16,
-                    padding: '10px 20px',
-                    border: '1px solid #16a34a',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                }}
-            >
-                Admin Login
-            </button>
-        </div>
+                    cursor: "pointer"
+                  }}
+                  aria-label="Select language"
+                >
+                  <option value="en">English</option>
+                  <option value="hi">हिन्दी</option>
+                  <option value="mr">मराठी</option>
+                  <option value="te">తెలుగు</option>
+                  <option value="kn">ಕನ್ನಡ</option>
+                </select>
+                <button
+                  onClick={() => setShowFeatures(v => !v)}
+                  style={{
+                    background: "rgba(34, 197, 94, 0.1)",
+                    border: "1px solid rgba(34, 197, 94, 0.2)",
+                    borderRadius: 10,
+                    width: 48,
+                    height: 48,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    gap: 4
+                  }}
+                  aria-label="More features"
+                >
+                  <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+                  <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+                  <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+                </button>
+              </div>
+            </header>
 
-        <footer style={{
-            textAlign: 'center',
-            padding: '40px 20px',
-            marginTop: '40px',
-            borderTop: '1px solid #e2e8f0'
-        }}>
-            <h2 style={{
-                color: '#16a34a',
-                fontWeight: 700,
-                fontSize: 24,
-                marginBottom: 24
+            {/* Main Content */}
+            <main style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "80px 0px",
+              margin: "0 auto"
             }}>
-                Support
-            </h2>
-            <p style={{
-                color: '#6B7280',
-                fontSize: 16,
+              <h1 style={{
+                color: "#16a34a",
+                fontWeight: 800,
+                fontSize: "clamp(32px, 5vw, 48px)",
+                lineHeight: 1.2,
+                marginBottom: 16,
+                letterSpacing: "-0.025em"
+              }}>
+                {t('welcome')}
+              </h1>
+              <p style={{
+                color: "#6B7280",
+                fontSize: 18,
                 lineHeight: 1.6,
-                margin: '0 auto',
-                maxWidth: '600px',
-                marginBottom: 24
-            }}>
-                Have questions or need help? Our support team is here for you.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
-                <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Email Us</h3>
-                    <a href="mailto:support@intellifarmsystems.com" style={{ color: '#16a34a', textDecoration: 'none' }}>support@intellifarmsystems.com</a>
-                </div>
-                <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Call Us</h3>
-                    <p style={{ margin: 0, color: '#6B7280' }}>+91-123-456-7890</p>
-                </div>
+                margin: 0,
+                fontWeight: 400,
+                marginBottom: 32
+              }}>
+                {t('subtitle', 'Your one-stop platform for smart, sustainable, and profitable farming. Explore features using the menu above.')}
+              </p>
+
+              {/* Crop Information Form */}
+              <section style={{
+                background: "#fff",
+                borderRadius: 16,
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 4px 12px rgba(34, 197, 94, 0.08)",
+                padding: 32,
+                marginBottom: 40,
+                width: "100%",
+                maxWidth: 500
+              }}>
+                <h2 style={{
+                  color: "#16a34a",
+                  fontWeight: 700,
+                  fontSize: 24,
+                  marginBottom: 24,
+                  textAlign: "center"
+                }}>
+                  {t('cropInformation')}
+                </h2>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div>
+                    <label htmlFor="userState" style={{
+                      display: "block",
+                      color: "#374151",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginBottom: 8
+                    }}>
+                      {t('yourState', 'Your State')}
+                    </label>
+                    <select
+                      id="userState"
+                      value={userState}
+                      onChange={(e) => setUserState(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        fontSize: 16,
+                        outline: "none",
+                        transition: "border-color 0.2s ease",
+                        boxSizing: "border-box"
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#16a34a";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#d1d5db";
+                      }}
+                    >
+                      <option value="">{t('selectYourState', 'Select your state')}</option>
+                      {indianStates.map((state, idx) => (
+                        <option key={idx} value={state}>{state}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="userDistrict" style={{
+                      display: "block",
+                      color: "#374151",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginBottom: 8
+                    }}>
+                      {t('yourDistrict', 'Your District')}
+                    </label>
+                    <input
+                      type="text"
+                      id="userDistrict"
+                      value={userDistrict}
+                      onChange={(e) => setUserDistrict(e.target.value)}
+                      placeholder={t('enterYourDistrict', 'Enter your district')}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        fontSize: 16,
+                        outline: "none",
+                        transition: "border-color 0.2s ease",
+                        boxSizing: "border-box"
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#16a34a";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#d1d5db";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cropName" style={{
+                      display: "block",
+                      color: "#374151",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginBottom: 8
+                    }}>
+                      {t('cropName', 'Crop Name')}
+                    </label>
+                    <input
+                      type="text"
+                      id="cropName"
+                      value={cropName}
+                      onChange={(e) => setCropName(e.target.value)}
+                      placeholder={t('enterCropName', 'Enter crop name (e.g., Wheat, Rice, Corn)')}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        fontSize: 16,
+                        outline: "none",
+                        transition: "border-color 0.2s ease",
+                        boxSizing: "border-box"
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#16a34a";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#d1d5db";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="harvestingDate" style={{
+                      display: "block",
+                      color: "#374151",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      marginBottom: 8
+                    }}>
+                      {t('harvestingDate', 'Harvesting Date')}
+                    </label>
+                    <input
+                      type="date"
+                      id="harvestingDate"
+                      value={harvestingDate}
+                      onChange={(e) => setHarvestingDate(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        fontSize: 16,
+                        outline: "none",
+                        transition: "border-color 0.2s ease",
+                        boxSizing: "border-box"
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "#16a34a";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "#d1d5db";
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                    <button
+                      type="submit"
+                      style={{
+                        flex: 1,
+                        background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+                        color: "#fff",
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        border: "none",
+                        borderRadius: 8,
+                        boxShadow: "0 2px 8px #bbf7d0",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {t('getPricePrediction')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      style={{
+                        flex: 1,
+                        background: "#f1f5f9",
+                        color: "#16a34a",
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: "12px 0",
+                        border: "1px solid #d1d5db",
+                        borderRadius: 8,
+                        boxShadow: "0 2px 8px #e0f2fe",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {t('reset')}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </main>
+
+            <div style={{ textAlign: 'center', marginTop: 40 }}>
+                <button
+                    onClick={() => setShowAdminLoginModal(true)}
+                    style={{
+                        background: 'transparent',
+                        color: '#16a34a',
+                        fontWeight: 600,
+                        fontSize: 16,
+                        padding: '10px 20px',
+                        border: '1px solid #16a34a',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    Admin Login
+                </button>
             </div>
-        </footer>
-      </div>
+
+            <footer style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                marginTop: '40px',
+                borderTop: '1px solid #e2e8f0'
+            }}>
+                <h2 style={{
+                    color: '#16a34a',
+                    fontWeight: 700,
+                    fontSize: 24,
+                    marginBottom: 24
+                }}>
+                    Support
+                </h2>
+                <p style={{
+                    color: '#6B7280',
+                    fontSize: 16,
+                    lineHeight: 1.6,
+                    margin: '0 auto',
+                    maxWidth: '600px',
+                    marginBottom: 24
+                }}>
+                    Have questions or need help? Our support team is here for you.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+                    <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Email Us</h3>
+                        <a href="mailto:support@intellifarmsystems.com" style={{ color: '#16a34a', textDecoration: 'none' }}>support@intellifarmsystems.com</a>
+                    </div>
+                    <div>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Call Us</h3>
+                        <p style={{ margin: 0, color: '#6B7280' }}>+91-123-456-7890</p>
+                    </div>
+                </div>
+            </footer>
+          </div>
+        </>
+      )}
 
       {/* Admin Login Modal */}
       {showAdminLoginModal && (
@@ -1477,10 +1557,13 @@ const App: React.FC = () => {
                 }}>
                     Admin Login
                 </h2>
-                <form style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <input
                         type="text"
                         placeholder="Username or Email"
+                        value={adminUsername}
+                        onChange={(e) => setAdminUsername(e.target.value)}
+                        required
                         style={{
                             width: '100%',
                             padding: '12px 16px',
@@ -1490,20 +1573,16 @@ const App: React.FC = () => {
                             boxSizing: 'border-box'
                         }}
                     />
-                    <input
-                        type="password"
+                    <MonkeyPasswordInput
+                        value={adminPassword}
+                        onChange={setAdminPassword}
                         placeholder="Password"
-                        style={{
-                            width: '100%',
-                            padding: '12px 16px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: 8,
-                            fontSize: 16,
-                            boxSizing: 'border-box'
-                        }}
+                        required
                     />
+                    {loginError && <p style={{ color: 'red', fontSize: 14, margin: '0', textAlign: 'center' }}>{loginError}</p>}
                     <button
                         type="submit"
+                        disabled={loginLoading}
                         style={{
                             background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
                             color: '#fff',
@@ -1513,10 +1592,11 @@ const App: React.FC = () => {
                             border: 'none',
                             borderRadius: 8,
                             cursor: 'pointer',
-                            marginTop: 8
+                            marginTop: 8,
+                            opacity: loginLoading ? 0.6 : 1
                         }}
                     >
-                        Login
+                        {loginLoading ? 'Logging in...' : 'Login'}
                     </button>
                 </form>
             </div>

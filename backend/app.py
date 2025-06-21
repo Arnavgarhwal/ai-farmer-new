@@ -6,11 +6,18 @@ from datetime import datetime, timedelta
 import random
 
 app = Flask(__name__)
-CORS(app, origins=[
-    "http://localhost:5173", 
-    "https://arnavgarhwal.github.io",
-    "https://ai-farmer-new.onrender.com"
-])
+
+# More robust CORS configuration
+CORS(app, 
+     origins=["http://localhost:5173", 
+              "https://arnavgarhwal.github.io",
+              "https://ai-farmer-new.onrender.com"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
+
+# Alternative: Allow all origins for development (less secure but easier)
+# CORS(app, origins="*", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Simple file-based storage
 DATA_FILE = "data.json"
@@ -101,34 +108,46 @@ def initialize_data():
 # Initialize data on startup
 initialize_data()
 
-@app.route('/')
+@app.route('/', methods=['GET', 'OPTIONS'])
 def home():
+    if request.method == 'OPTIONS':
+        return '', 200
     # Record a visit when someone accesses the home page
     record_visit()
     return jsonify({"message": "AI Farmer Backend API", "status": "running"})
 
-@app.route('/api/track-visit', methods=['POST'])
+@app.route('/api/track-visit', methods=['POST', 'OPTIONS'])
 def track_visit():
     """Track a new visit"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         record_visit()
         return jsonify({"success": True, "message": "Visit recorded"})
     except Exception as e:
+        print(f"Error tracking visit: {str(e)}")
         return jsonify({"error": f"Failed to record visit: {str(e)}"}), 500
 
-@app.route('/api/visitor-stats', methods=['GET'])
+@app.route('/api/visitor-stats', methods=['GET', 'OPTIONS'])
 def visitor_stats():
     """Get real visitor statistics"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         stats = get_visitor_stats()
         return jsonify(stats)
     except Exception as e:
+        print(f"Error getting visitor stats: {str(e)}")
         return jsonify({"error": f"Failed to get visitor stats: {str(e)}"}), 500
 
-@app.route('/api/admin/login', methods=['POST'])
+@app.route('/api/admin/login', methods=['POST', 'OPTIONS'])
 def admin_login():
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         data = request.get_json()
+        print(f"Login attempt received: {data}")
+        
         username = data.get('username')
         password = data.get('password')
         
@@ -142,6 +161,7 @@ def admin_login():
         # Check credentials
         for admin in admins:
             if admin.get("username") == username and admin.get("password") == password:
+                print(f"Successful login for user: {username}")
                 return jsonify({
                     "success": True,
                     "message": "Login successful",
@@ -153,14 +173,18 @@ def admin_login():
                     }
                 })
         
+        print(f"Failed login attempt for user: {username}")
         return jsonify({"error": "Invalid credentials"}), 401
         
     except Exception as e:
+        print(f"Login error: {str(e)}")
         return jsonify({"error": f"Login failed: {str(e)}"}), 500
 
-@app.route('/api/admin/dashboard', methods=['GET'])
+@app.route('/api/admin/dashboard', methods=['GET', 'OPTIONS'])
 def admin_dashboard():
     """Get admin dashboard data"""
+    if request.method == 'OPTIONS':
+        return '', 200
     try:
         db_data = load_data()
         visitor_stats = get_visitor_stats()
