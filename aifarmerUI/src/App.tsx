@@ -1,1341 +1,1527 @@
-import React, { useState, useEffect } from "react";
-import "./i18n";
-import { useTranslation } from "react-i18next";
+import React, { useState } from "react";
+import IrrigationAdviceModal from "./IrrigationAdviceModal";
+import CropSuggestionsModal from "./CropSuggestionsModal";
+import EquipmentGuideModal from "./EquipmentGuideModal";
+import CostAnalysisModal from "./CostAnalysisModal";
+import YieldPredictionModal from "./YieldPredictionModal";
+import WeatherUpdatesModal from "./WeatherUpdatesModal";
+import HarvestPlanningModal from "./HarvestPlanningModal";
+import NearbyMarketplaceModal from "./NearbyMarketplaceModal";
+import i18n from "./i18n";
+import { useTranslation } from 'react-i18next';
 
-const MOCK_MARKETS = [
-  { name: "Agro Market A", distance: "5 km" },
-  { name: "Green Valley Market", distance: "12 km" },
-  { name: "Farmers' Hub", distance: "20 km" },
-];
-const MOCK_PRICES: { [key: string]: { min: number; max: number; period: string } } = {
-  wheat: { min: 1800, max: 2200, period: "March - April" },
-  rice: { min: 1500, max: 2000, period: "October - November" },
-  maize: { min: 1200, max: 1700, period: "September - October" },
-};
-
-// All States and Union Territories of India
-const INDIAN_STATES = [
-  { id: "AP", name: "Andhra Pradesh" },
-  { id: "AR", name: "Arunachal Pradesh" },
-  { id: "AS", name: "Assam" },
-  { id: "BR", name: "Bihar" },
-  { id: "CT", name: "Chhattisgarh" },
-  { id: "GA", name: "Goa" },
-  { id: "GJ", name: "Gujarat" },
-  { id: "HR", name: "Haryana" },
-  { id: "HP", name: "Himachal Pradesh" },
-  { id: "JH", name: "Jharkhand" },
-  { id: "KA", name: "Karnataka" },
-  { id: "KL", name: "Kerala" },
-  { id: "MP", name: "Madhya Pradesh" },
-  { id: "MH", name: "Maharashtra" },
-  { id: "MN", name: "Manipur" },
-  { id: "ML", name: "Meghalaya" },
-  { id: "MZ", name: "Mizoram" },
-  { id: "NL", name: "Nagaland" },
-  { id: "OR", name: "Odisha" },
-  { id: "PB", name: "Punjab" },
-  { id: "RJ", name: "Rajasthan" },
-  { id: "SK", name: "Sikkim" },
-  { id: "TN", name: "Tamil Nadu" },
-  { id: "TG", name: "Telangana" },
-  { id: "TR", name: "Tripura" },
-  { id: "UP", name: "Uttar Pradesh" },
-  { id: "UT", name: "Uttarakhand" },
-  { id: "WB", name: "West Bengal" },
+// List of all Indian States and Union Territories
+const indianStates = [
+  // States
+  "Andhra Pradesh",
+  "Arunachal Pradesh", 
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
   // Union Territories
-  { id: "AN", name: "Andaman and Nicobar Islands" },
-  { id: "CH", name: "Chandigarh" },
-  { id: "DN", name: "Dadra and Nagar Haveli and Daman and Diu" },
-  { id: "DL", name: "Delhi" },
-  { id: "JK", name: "Jammu and Kashmir" },
-  { id: "LA", name: "Ladakh" },
-  { id: "LD", name: "Lakshadweep" },
-  { id: "PY", name: "Puducherry" }
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry"
 ];
 
-// Equipment Data
-const equipmentList = [
+// Soil Types
+const soilTypes = [
+  "Alluvial Soil",
+  "Black Soil (Regur)",
+  "Red Soil",
+  "Laterite Soil",
+  "Mountain Soil",
+  "Desert Soil",
+  "Saline Soil",
+  "Peaty Soil"
+];
+
+// Comprehensive Crop Database with detailed economics
+const cropDatabase = [
+  {
+    name: "Rice",
+    icon: "🌾",
+    investmentLevel: "Medium",
+    growingRequirement: {
+      season: ["Kharif", "Rabi"],
+      soilType: ["Alluvial Soil", "Clay Loam"],
+      duration: "90-150 days",
+      waterLevel: "High"
+    },
+    economicsPerAcre: {
+      yield: "25-30 Quintals",
+      marketPrice: "₹1,800 - ₹2,500 / Quintal",
+      grossRevenue: "₹45,000 - ₹75,000",
+      netProfit: "₹20,000 - ₹40,000"
+    },
+    priceBreakdown: {
+      seeds: "₹4,000",
+      fertilizers: "₹6,000",
+      labor: "₹10,000",
+      transportation: "₹2,000",
+      pesticides: "N/A",
+      other: "₹3,000"
+    },
+    description: "A staple food for a large part of the world's population. It requires significant water and labor but offers good returns."
+  },
+  {
+    name: "Wheat",
+    icon: "🌾",
+    investmentLevel: "Medium",
+    growingRequirement: {
+      season: ["Rabi"],
+      soilType: ["Alluvial Soil", "Clay Loam", "Black Soil"],
+      duration: "110-130 days",
+      waterLevel: "Medium"
+    },
+    economicsPerAcre: {
+      yield: "20-25 Quintals",
+      marketPrice: "₹1,900 - ₹2,200 / Quintal",
+      grossRevenue: "₹38,000 - ₹55,000",
+      netProfit: "₹18,000 - ₹28,000"
+    },
+    priceBreakdown: {
+      seeds: "₹3,500",
+      fertilizers: "₹5,000",
+      labor: "₹8,000",
+      transportation: "₹1,500",
+      pesticides: "N/A",
+      other: "₹2,000"
+    },
+    description: "A primary winter crop in India, crucial for food security. It is less water-intensive than rice."
+  },
+  {
+    name: "Cotton",
+    icon: "🧶",
+    investmentLevel: "High",
+    growingRequirement: {
+        season: ["Kharif"],
+        soilType: ["Black Soil", "Red Soil"],
+        duration: "150-180 days",
+        waterLevel: "Medium"
+    },
+    economicsPerAcre: {
+        yield: "8-12 Quintals",
+        marketPrice: "₹5,000 - ₹6,000 / Quintal",
+        grossRevenue: "₹40,000 - ₹72,000",
+        netProfit: "₹15,000 - ₹35,000"
+    },
+    priceBreakdown: {
+        seeds: "₹7,000",
+        fertilizers: "₹8,000",
+        pesticides: "₹5,000",
+        labor: "₹12,000",
+        transportation: "₹2,500"
+    },
+    description: "A key cash crop, known as 'White Gold'. It has a high investment cost, mainly due to seeds and pest control."
+  },
+  {
+    name: "Sugarcane",
+    icon: "🎋",
+    investmentLevel: "High",
+    growingRequirement: {
+        season: ["Kharif"],
+        soilType: ["Alluvial Soil", "Black Soil"],
+        duration: "12-18 months",
+        waterLevel: "High"
+    },
+    economicsPerAcre: {
+        yield: "30-40 Tonnes",
+        marketPrice: "₹2,500 - ₹3,500 / Tonne",
+        grossRevenue: "₹75,000 - ₹1,40,000",
+        netProfit: "₹40,000 - ₹80,000"
+    },
+    priceBreakdown: {
+        seeds: "₹10,000",
+        fertilizers: "₹12,000",
+        labor: "₹15,000",
+        transportation: "₹8,000",
+        pesticides: "N/A",
+        other: "₹5,000"
+    },
+    description: "A long-duration crop that is a major source of sugar and jaggery. It offers high profits but requires sustained investment and water."
+  },
+  {
+    name: "Maize",
+    icon: "🌽",
+    investmentLevel: "Medium",
+    growingRequirement: { 
+      season: ["Kharif", "Rabi"], 
+      soilType: ["Alluvial Soil", "Red Soil", "Loam"], 
+      duration: "90-110 days", 
+      waterLevel: "Medium" 
+    },
+    economicsPerAcre: { 
+      yield: "20-25 Quintals", 
+      marketPrice: "₹1,700 - ₹2,100 / Quintal", 
+      grossRevenue: "₹34,000 - ₹52,500", 
+      netProfit: "₹15,000 - ₹25,000" 
+    },
+    priceBreakdown: { 
+      seeds: "₹4,000", 
+      fertilizers: "₹5,500", 
+      labor: "₹8,000", 
+      transportation: "₹2,000", 
+      pesticides: "₹2,000", 
+      other: "₹2,500" 
+    },
+    description: "A versatile cereal grain used for human consumption, animal feed, and industrial products. It's adaptable to various climates."
+  },
+  {
+    name: "Pulses (Chickpea)",
+    icon: "🫘",
+    investmentLevel: "Low",
+    growingRequirement: { 
+      season: ["Rabi"], 
+      soilType: ["Light to heavy soils", "Sandy Loam"], 
+      duration: "95-105 days", 
+      waterLevel: "Low" 
+    },
+    economicsPerAcre: { 
+      yield: "8-10 Quintals", 
+      marketPrice: "₹4,500 - ₹5,500 / Quintal", 
+      grossRevenue: "₹36,000 - ₹55,000", 
+      netProfit: "₹20,000 - ₹35,000" 
+    },
+    priceBreakdown: { 
+      seeds: "₹3,000", 
+      fertilizers: "₹3,000", 
+      labor: "₹7,000", 
+      transportation: "₹1,500", 
+      pesticides: "₹1,500", 
+      other: "₹2,000" 
+    },
+    description: "An important pulse crop, valued for its high protein content. It improves soil fertility by fixing nitrogen."
+  },
+  {
+    name: "Soybean",
+    icon: "🌱",
+    investmentLevel: "Medium",
+    growingRequirement: { 
+      season: ["Kharif"], 
+      soilType: ["Loam", "Clay Loam"], 
+      duration: "80-100 days", 
+      waterLevel: "Medium" 
+    },
+    economicsPerAcre: { 
+      yield: "10-12 Quintals", 
+      marketPrice: "₹3,500 - ₹4,500 / Quintal", 
+      grossRevenue: "₹35,000 - ₹54,000", 
+      netProfit: "₹15,000 - ₹28,000" 
+    },
+    priceBreakdown: { 
+      seeds: "₹3,500", 
+      fertilizers: "₹5,000", 
+      labor: "₹9,000", 
+      transportation: "₹2,000", 
+      pesticides: "₹2,500", 
+      other: "₹2,000" 
+    },
+    description: "A globally important crop providing oil and protein. Used in a variety of food products and for animal feed."
+  },
+  {
+    name: "Tomato",
+    icon: "🍅",
+    investmentLevel: "High",
+    growingRequirement: { 
+      season: ["Rabi", "Summer"], 
+      soilType: ["Sandy Loam", "Clay Loam", "Red Soil"], 
+      duration: "120-140 days", 
+      waterLevel: "Medium" 
+    },
+    economicsPerAcre: { 
+      yield: "100-150 Quintals", 
+      marketPrice: "₹800 - ₹1,500 / Quintal", 
+      grossRevenue: "₹80,000 - ₹2,25,000", 
+      netProfit: "₹40,000 - ₹1,50,000" 
+    },
+    priceBreakdown: { 
+      seeds: "₹8,000", 
+      fertilizers: "₹10,000", 
+      labor: "₹20,000", 
+      transportation: "₹5,000", 
+      pesticides: "₹7,000", 
+      other: "₹5,000" 
+    },
+    description: "A popular and high-value vegetable crop. Prices can be volatile, but potential for high returns is significant."
+  },
+  {
+    name: "Potato",
+    icon: "🥔",
+    investmentLevel: "High",
+    growingRequirement: { 
+      season: ["Rabi"], 
+      soilType: ["Sandy Loam", "Silt Loam"], 
+      duration: "90-120 days", 
+      waterLevel: "Medium" 
+    },
+    economicsPerAcre: { 
+      yield: "100-120 Quintals", 
+      marketPrice: "₹1,000 - ₹1,800 / Quintal", 
+      grossRevenue: "₹1,00,000 - ₹2,16,000", 
+      netProfit: "₹50,000 - ₹1,40,000" 
+    },
+    priceBreakdown: { 
+      seeds: "₹20,000", 
+      fertilizers: "₹12,000", 
+      labor: "₹15,000", 
+      transportation: "₹6,000", 
+      pesticides: "₹6,000", 
+      other: "₹5,000" 
+    },
+    description: "A major tuber crop and a staple food in many regions. Requires high seed cost but offers excellent profitability."
+  },
+  {
+    name: "Groundnut (Peanut)",
+    icon: "🥜",
+    investmentLevel: "Medium",
+    growingRequirement: {
+      season: ["Kharif", "Summer"],
+      soilType: ["Sandy Loam", "Light Soil"],
+      duration: "100-120 days",
+      waterLevel: "Medium"
+    },
+    economicsPerAcre: {
+      yield: "15-20 Quintals",
+      marketPrice: "₹4,000 - ₹5,500 / Quintal",
+      grossRevenue: "₹60,000 - ₹1,10,000",
+      netProfit: "₹25,000 - ₹50,000"
+    },
+    priceBreakdown: {
+      seeds: "₹4,500",
+      fertilizers: "₹5,000",
+      labor: "₹10,000",
+      transportation: "₹2,000",
+      pesticides: "₹2,500",
+      other: "₹3,000"
+    },
+    description: "A major oilseed crop, valued for its edible seeds and oil. Grows best in sandy soils with moderate rainfall."
+  },
+  {
+    name: "Banana",
+    icon: "🍌",
+    investmentLevel: "High",
+    growingRequirement: {
+      season: ["All Year"],
+      soilType: ["Alluvial Soil", "Loam"],
+      duration: "10-12 months",
+      waterLevel: "High"
+    },
+    economicsPerAcre: {
+      yield: "30-40 Tonnes",
+      marketPrice: "₹8,000 - ₹12,000 / Tonne",
+      grossRevenue: "₹2,40,000 - ₹4,80,000",
+      netProfit: "₹1,00,000 - ₹2,00,000"
+    },
+    priceBreakdown: {
+      seedlings: "₹20,000",
+      fertilizers: "₹25,000",
+      labor: "₹30,000",
+      irrigation: "₹15,000",
+      transportation: "₹10,000",
+      other: "₹10,000"
+    },
+    description: "A high-value fruit crop with year-round cultivation. Requires high investment but offers excellent returns."
+  },
+  {
+    name: "Onion",
+    icon: "🧅",
+    investmentLevel: "Medium",
+    growingRequirement: {
+      season: ["Rabi", "Kharif"],
+      soilType: ["Loam", "Sandy Loam"],
+      duration: "90-120 days",
+      waterLevel: "Medium"
+    },
+    economicsPerAcre: {
+      yield: "80-120 Quintals",
+      marketPrice: "₹800 - ₹2,000 / Quintal",
+      grossRevenue: "₹64,000 - ₹2,40,000",
+      netProfit: "₹30,000 - ₹1,20,000"
+    },
+    priceBreakdown: {
+      seeds: "₹3,000",
+      fertilizers: "₹8,000",
+      labor: "₹15,000",
+      irrigation: "₹5,000",
+      transportation: "₹4,000",
+      other: "₹3,000"
+    },
+    description: "A staple vegetable crop with fluctuating prices. Requires careful post-harvest handling and storage."
+  },
+  {
+    name: "Mustard",
+    icon: "🌻",
+    investmentLevel: "Low",
+    growingRequirement: {
+      season: ["Rabi"],
+      soilType: ["Alluvial Soil", "Loam"],
+      duration: "100-120 days",
+      waterLevel: "Low"
+    },
+    economicsPerAcre: {
+      yield: "8-10 Quintals",
+      marketPrice: "₹4,000 - ₹5,000 / Quintal",
+      grossRevenue: "₹32,000 - ₹50,000",
+      netProfit: "₹18,000 - ₹30,000"
+    },
+    priceBreakdown: {
+      seeds: "₹2,000",
+      fertilizers: "₹2,500",
+      labor: "₹6,000",
+      transportation: "₹1,500",
+      pesticides: "₹1,000",
+      other: "₹1,500"
+    },
+    description: "A key oilseed crop grown in winter. Low input costs and good market demand for oil extraction."
+  },
+  {
+    name: "Brinjal (Eggplant)",
+    icon: "🍆",
+    investmentLevel: "Medium",
+    growingRequirement: {
+      season: ["Kharif", "Rabi", "Summer"],
+      soilType: ["Sandy Loam", "Clay Loam"],
+      duration: "120-150 days",
+      waterLevel: "Medium"
+    },
+    economicsPerAcre: {
+      yield: "120-180 Quintals",
+      marketPrice: "₹700 - ₹1,200 / Quintal",
+      grossRevenue: "₹84,000 - ₹2,16,000",
+      netProfit: "₹35,000 - ₹1,00,000"
+    },
+    priceBreakdown: {
+      seeds: "₹2,500",
+      fertilizers: "₹7,000",
+      labor: "₹18,000",
+      irrigation: "₹4,000",
+      transportation: "₹3,000",
+      pesticides: "₹2,500",
+      other: "₹2,000"
+    },
+    description: "A popular vegetable crop with high yield potential. Grows well in warm climates and is harvested multiple times."
+  }
+];
+
+const cropCategories = ["All", "Low", "Medium", "High"]; // For filtering by investment level
+
+// Seasons
+const seasons = ["Kharif", "Rabi", "Zaid", "All Year"];
+
+// Government Schemes Database
+const governmentSchemes = [
+  {
+    name: "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+    icon: "💰",
+    category: "Direct Income Support",
+    description: "Provides direct income support of ₹6,000 per year to eligible farmer families",
+    eligibility: "Small and marginal farmers with landholding up to 2 hectares",
+    benefits: "₹6,000 per year in 3 equal installments",
+    states: ["All States"],
+    applicationProcess: "Online through PM-KISAN portal or Common Service Centers",
+    website: "https://pmkisan.gov.in",
+    status: "Active"
+  },
+  {
+    name: "PM Fasal Bima Yojana (PMFBY)",
+    icon: "🛡️",
+    category: "Crop Insurance",
+    description: "Comprehensive crop insurance scheme to protect farmers against natural calamities",
+    eligibility: "All farmers growing notified crops",
+    benefits: "Up to 100% crop loss coverage, low premium rates",
+    states: ["All States"],
+    applicationProcess: "Through banks, insurance companies, or Common Service Centers",
+    website: "https://pmfby.gov.in",
+    status: "Active"
+  },
+  {
+    name: "Kisan Credit Card (KCC)",
+    icon: "💳",
+    category: "Credit Support",
+    description: "Provides easy access to credit for farmers to meet agricultural needs",
+    eligibility: "All farmers including tenant farmers and sharecroppers",
+    benefits: "Up to ₹3 lakh credit limit, low interest rates, flexible repayment",
+    states: ["All States"],
+    applicationProcess: "Through banks and cooperative societies",
+    website: "https://www.nabard.org",
+    status: "Active"
+  },
+  {
+    name: "Soil Health Card Scheme",
+    icon: "🌱",
+    category: "Soil Management",
+    description: "Provides soil health cards to farmers with soil testing and recommendations",
+    eligibility: "All farmers",
+    benefits: "Free soil testing, personalized recommendations for fertilizers",
+    states: ["All States"],
+    applicationProcess: "Through agriculture department offices",
+    website: "https://soilhealth.dac.gov.in",
+    status: "Active"
+  },
+  {
+    name: "PMKSY (Pradhan Mantri Krishi Sinchayee Yojana)",
+    icon: "💧",
+    category: "Irrigation",
+    description: "Comprehensive irrigation scheme to ensure water security",
+    eligibility: "Farmers in water-scarce areas",
+    benefits: "Subsidy for irrigation equipment, micro-irrigation systems",
+    states: ["All States"],
+    applicationProcess: "Through agriculture department and banks",
+    website: "https://pmksy.gov.in",
+    status: "Active"
+  },
+  {
+    name: "National Agriculture Market (eNAM)",
+    icon: "🏪",
+    category: "Market Access",
+    description: "Online trading platform for agricultural commodities",
+    eligibility: "All farmers and traders",
+    benefits: "Better price discovery, reduced transaction costs",
+    states: ["All States"],
+    applicationProcess: "Online registration through eNAM portal",
+    website: "https://enam.gov.in",
+    status: "Active"
+  },
+  {
+    name: "PM-FME (Pradhan Mantri Formalisation of Micro Food Processing Enterprises)",
+    icon: "🏭",
+    category: "Food Processing",
+    description: "Support for micro food processing enterprises",
+    eligibility: "Micro food processing units, self-help groups",
+    benefits: "Up to 35% subsidy, credit support, training",
+    states: ["All States"],
+    applicationProcess: "Through state implementing agencies",
+    website: "https://pmfme.mofpi.gov.in",
+    status: "Active"
+  },
+  {
+    name: "PMKSY-PDMC (Per Drop More Crop)",
+    icon: "💧",
+    category: "Micro Irrigation",
+    description: "Promotes micro irrigation for water conservation",
+    eligibility: "Farmers with small landholdings",
+    benefits: "Up to 55% subsidy for micro irrigation systems",
+    states: ["All States"],
+    applicationProcess: "Through agriculture department",
+    website: "https://pmksy.gov.in",
+    status: "Active"
+  },
+  {
+    name: "National Mission for Sustainable Agriculture (NMSA)",
+    icon: "🌿",
+    category: "Sustainable Farming",
+    description: "Promotes sustainable agriculture practices",
+    eligibility: "Farmers practicing organic farming",
+    benefits: "Support for organic farming, soil conservation",
+    states: ["All States"],
+    applicationProcess: "Through agriculture department",
+    website: "https://nmsa.dac.gov.in",
+    status: "Active"
+  },
+  {
+    name: "PM-KMY (Pradhan Mantri Kisan Maan Dhan Yojana)",
+    icon: "👴",
+    category: "Pension Scheme",
+    description: "Pension scheme for small and marginal farmers",
+    eligibility: "Farmers aged 18-40 years with landholding up to 2 hectares",
+    benefits: "₹3,000 monthly pension after 60 years",
+    states: ["All States"],
+    applicationProcess: "Through Common Service Centers",
+    website: "https://pmkmy.gov.in",
+    status: "Active"
+  },
+  {
+    name: "Maharashtra - Shetkari Sanman Yojana",
+    icon: "🏛️",
+    category: "State Scheme",
+    description: "Direct income support for farmers in Maharashtra",
+    eligibility: "Farmers in Maharashtra",
+    benefits: "₹6,000 per year additional support",
+    states: ["Maharashtra"],
+    applicationProcess: "Through Maharashtra government portal",
+    website: "https://maharashtra.gov.in",
+    status: "Active"
+  },
+  {
+    name: "Punjab - Bigha Sansad Yojana",
+    icon: "🏛️",
+    category: "State Scheme",
+    description: "Support for farmers in Punjab",
+    eligibility: "Farmers in Punjab",
+    benefits: "Various subsidies and support programs",
+    states: ["Punjab"],
+    applicationProcess: "Through Punjab agriculture department",
+    website: "https://punjab.gov.in",
+    status: "Active"
+  }
+];
+
+// Scheme Categories
+const schemeCategories = [
+  "All Categories",
+  "Direct Income Support",
+  "Crop Insurance",
+  "Credit Support",
+  "Soil Management",
+  "Irrigation",
+  "Market Access",
+  "Food Processing",
+  "Micro Irrigation",
+  "Sustainable Farming",
+  "Pension Scheme",
+  "State Scheme"
+];
+
+// Irrigation Advice Database
+const irrigationAdvice = [
+  {
+    name: "Drip Irrigation",
+    icon: "💧",
+    category: "Micro-Irrigation",
+    description: "Delivers water directly to the root zone of plants, minimizing evaporation and runoff. Highly efficient for row crops and orchards.",
+    cost: "High (₹50,000 - ₹1,00,000 per acre)",
+    advantages: ["High water efficiency (90-95%)", "Reduces weed growth", "Fertilizer can be applied with water (fertigation)"],
+    disadvantages: ["High initial investment", "Clogging of emitters", "Requires regular maintenance"],
+    suitableCrops: ["Fruits (Grapes, Banana, Pomegranate)", "Vegetables (Tomato, Potato, Onion)", "Cotton", "Sugarcane"],
+    link: "https://nph.onlinelibrary.wiley.com/doi/10.1002/ppp3.10218"
+  },
+  {
+    name: "Sprinkler Irrigation",
+    icon: "💦",
+    category: "Micro-Irrigation",
+    description: "Water is sprayed over the crops, simulating natural rainfall. Suitable for a wide variety of crops and soil types.",
+    cost: "Medium (₹25,000 - ₹50,000 per acre)",
+    advantages: ["Covers a large area", "Suitable for most soil types", "Reduces soil erosion"],
+    disadvantages: ["Lower water efficiency than drip (60-80%)", "High evaporation losses in windy/hot conditions", "Can lead to fungal diseases on leaves"],
+    suitableCrops: ["Wheat", "Gram", "Maize", "Pulses", "Groundnut"],
+    link: "https://www.sciencedirect.com/topics/agricultural-and-biological-sciences/sprinkler-irrigation"
+  },
+  {
+    name: "Surface Irrigation (Flood/Furrow)",
+    icon: "🌊",
+    category: "Conventional",
+    description: "Water is applied to the field in either a continuous or intermittent stream. The most common and oldest method of irrigation.",
+    cost: "Low (Minimal infrastructure needed)",
+    advantages: ["Low initial cost", "Simple to operate", "Can leach salts from the root zone"],
+    disadvantages: ["Very low water efficiency (40-50%)", "High water wastage", "Uneven water distribution"],
+    suitableCrops: ["Rice", "Wheat", "Sugarcane"],
+    link: "https://www.sciencedirect.com/topics/earth-and-planetary-sciences/surface-irrigation"
+  },
+  {
+    name: "Subsurface Irrigation",
+    icon: "🌿",
+    category: "Advanced",
+    description: "A system of buried pipes or tubes delivers water directly to the plant root zone, eliminating surface evaporation.",
+    cost: "Very High (Over ₹1,00,000 per acre)",
+    advantages: ["Highest water efficiency (>95%)", "No surface runoff or evaporation", "Improves soil aeration"],
+    disadvantages: ["Very high installation and maintenance costs", "Risk of soil salinization if not managed properly", "Difficult to inspect and repair"],
+    suitableCrops: ["High-value cash crops", "Greenhouses", "Areas with severe water scarcity"],
+    link: "https://www.sciencedirect.com/topics/engineering/subsurface-irrigation"
+  }
+];
+
+const irrigationCategories = ["All", "Micro-Irrigation", "Conventional", "Advanced"];
+
+// Equipment Guide Database
+const equipmentGuide = [
   {
     name: "Tractor",
     icon: "🚜",
     category: "Machinery",
-    priceRange: "₹3,00,000 - ₹10,00,000",
-    features: [
-      "20-60 HP engine options",
-      "4WD/2WD variants",
-      "Hydraulic lift, PTO, and drawbar",
-      "Fuel efficient, easy maintenance"
-    ],
-    suitableFor: ["Land preparation", "Sowing", "Transport"],
-    maintenance: "Regular oil changes, filter cleaning, and timely servicing."
+    price: "₹3,00,000 - ₹15,00,000",
+    uses: ["Ploughing", "Tilling", "Hauling", "Operating other implements"],
+    suitableFor: "Medium to large-scale farms",
+    maintenance: "High (Regular engine checks, oil changes, tire pressure)",
+    advantages: ["Versatile and powerful", "Saves significant labor and time", "Can be used for multiple farm operations"],
+    disadvantages: ["High initial cost", "Requires skilled operator", "High fuel and maintenance costs"],
+    importance: "The backbone of modern mechanized agriculture, essential for large-scale operations.",
+    link: "https://www.tractorjunction.com"
   },
   {
-    name: "Rotavator",
-    icon: "🪓",
-    category: "Implement",
-    priceRange: "₹60,000 - ₹1,50,000",
-    features: [
-      "Efficient soil pulverization",
-      "Reduces weed growth",
-      "Saves time and labor"
-    ],
-    suitableFor: ["Seedbed preparation", "Weed control"],
-    maintenance: "Check blades for wear, lubricate moving parts."
+    name: "Sprayer",
+    icon: "💨",
+    category: "Crop Care",
+    price: "₹500 (Handheld) - ₹5,00,000 (Tractor-mounted)",
+    uses: ["Applying pesticides, herbicides, and fertilizers", "Foliar feeding"],
+    suitableFor: "All farm sizes, with different types available",
+    maintenance: "Medium (Regular cleaning of nozzles and tanks)",
+    advantages: ["Ensures uniform application of liquids", "Saves time compared to manual methods", "Effective pest and disease control"],
+    disadvantages: ["Risk of chemical exposure", "Drift can affect non-target areas", "Can be expensive for large models"],
+    importance: "Crucial for protecting crops from pests and diseases, thereby securing yield.",
+    link: "https://www.agrifarming.in/types-of-sprayers-in-agriculture"
   },
   {
     name: "Seed Drill",
     icon: "🌱",
-    category: "Implement",
-    priceRange: "₹40,000 - ₹1,20,000",
-    features: [
-      "Uniform seed placement",
-      "Reduces seed wastage",
-      "Improves germination rates"
-    ],
-    suitableFor: ["Sowing wheat, rice, pulses, oilseeds"],
-    maintenance: "Clean after use, check for blockages."
+    category: "Planting",
+    price: "₹20,000 - ₹1,50,000",
+    uses: ["Sowing seeds at a specific depth and spacing", "Applying fertilizer along with seeds"],
+    suitableFor: "Medium to large-scale farms for row crops",
+    maintenance: "Low (Cleaning after use, checking for blockages)",
+    advantages: ["Uniform seed distribution", "Saves labor and time", "Improves germination rates"],
+    disadvantages: ["Not suitable for all types of seeds or soil", "Requires a tractor to operate"],
+    importance: "Ensures optimal plant population and spacing, which is critical for achieving high yields.",
+    link: "https://www.agrifarming.in/seed-drill-in-agriculture"
   },
   {
-    name: "Sprinkler Irrigation System",
-    icon: "💧",
-    category: "Irrigation",
-    priceRange: "₹25,000 - ₹1,00,000 per acre",
-    features: [
-      "Uniform water distribution",
-      "Reduces water usage",
-      "Suitable for most crops"
-    ],
-    suitableFor: ["Vegetables", "Cereals", "Pulses"],
-    maintenance: "Check for leaks, clean nozzles regularly."
+    name: "Solar Panel System",
+    icon: "☀️",
+    category: "Energy & Tech",
+    price: "₹50,000 - ₹5,00,000 (depending on capacity)",
+    uses: ["Powering water pumps", "Lighting for farmhouses and sheds", "Running other electrical equipment"],
+    suitableFor: "Farms in areas with good sunlight, especially off-grid locations",
+    maintenance: "Low (Periodic cleaning of panels)",
+    advantages: ["Reduces electricity bills", "Environmentally friendly", "Low running costs after installation"],
+    disadvantages: ["High initial investment", "Dependent on weather conditions", "Requires space for installation"],
+    importance: "Provides a sustainable and cost-effective energy source, reducing reliance on the grid and diesel generators.",
+    link: "https://www.loomsolar.com/blogs/collections/solar-panel-for-agriculture"
   },
   {
-    name: "Drip Irrigation System",
+    name: "Soil Sensors",
+    icon: "🔬",
+    category: "Energy & Tech",
+    price: "₹5,000 - ₹50,000 per sensor kit",
+    uses: ["Monitoring soil moisture levels", "Measuring soil temperature and nutrient content (pH, NPK)"],
+    suitableFor: "Precision farming, high-value crops, and water-scarce areas",
+    maintenance: "Low (Calibration and battery replacement)",
+    advantages: ["Enables data-driven irrigation and fertilization", "Saves water and fertilizer", "Improves crop health and yield"],
+    disadvantages: ["Initial cost can be high for large areas", "Requires technical knowledge to interpret data"],
+    importance: "A key tool for precision agriculture, allowing farmers to make informed decisions based on real-time soil conditions.",
+    link: "https://www.sensoterra.com/en/technologies/soil-moisture-sensor-agriculture/"
+  },
+  {
+    name: "Rotavator",
+    icon: "🌀",
+    category: "Machinery",
+    price: "₹60,000 - ₹1,50,000",
+    uses: ["Soil preparation", "Mixing crop residues", "Weed control"],
+    suitableFor: "All farm sizes, especially for seedbed preparation",
+    maintenance: "Medium (Blade sharpening, gearbox oil check)",
+    advantages: ["Reduces soil clods", "Saves time and labor", "Improves soil aeration"],
+    disadvantages: ["Can cause soil compaction if overused", "Requires tractor power"],
+    importance: "Essential for modern tillage and seedbed preparation.",
+    link: "https://www.tractorjunction.com/implement/rotavator/"
+  },
+  {
+    name: "Sprinkler System",
     icon: "💦",
-    category: "Irrigation",
-    priceRange: "₹35,000 - ₹1,20,000 per acre",
-    features: [
-      "Targeted water delivery",
-      "Reduces evaporation loss",
-      "Ideal for row crops, fruits"
-    ],
-    suitableFor: ["Fruits", "Vegetables", "Flowers"],
-    maintenance: "Flush lines, check emitters for clogging."
+    category: "Crop Care",
+    price: "₹10,000 - ₹1,00,000",
+    uses: ["Irrigation of crops", "Cooling crops during heat waves"],
+    suitableFor: "All farm sizes, especially for vegetables and lawns",
+    maintenance: "Low (Nozzle cleaning, pipe checks)",
+    advantages: ["Uniform water distribution", "Reduces water wastage", "Can be automated"],
+    disadvantages: ["Evaporation losses in hot/windy weather", "Initial setup cost"],
+    importance: "Efficient irrigation for a wide range of crops.",
+    link: "https://www.krishijagran.com/agripedia/sprinkler-irrigation-system/"
   },
   {
-    name: "Combine Harvester",
+    name: "Drip Irrigation Kit",
+    icon: "💧",
+    category: "Crop Care",
+    price: "₹15,000 - ₹80,000 per acre",
+    uses: ["Precise irrigation at root zone", "Fertigation"],
+    suitableFor: "High-value crops, orchards, water-scarce areas",
+    maintenance: "Medium (Filter cleaning, emitter checks)",
+    advantages: ["Saves water and fertilizer", "Reduces weed growth", "Improves yield"],
+    disadvantages: ["Clogging risk", "Requires regular maintenance", "Initial investment"],
+    importance: "Best for water conservation and high-value crops.",
+    link: "https://www.indiamart.com/proddetail/drip-irrigation-kit-18649292462.html"
+  },
+  {
+    name: "Harvester",
     icon: "🚜",
     category: "Machinery",
-    priceRange: "₹15,00,000 - ₹30,00,000",
-    features: [
-      "Harvests, threshes, and cleans in one pass",
-      "Saves labor and time",
-      "Reduces grain loss"
-    ],
-    suitableFor: ["Wheat", "Rice", "Maize"],
-    maintenance: "Clean after use, check belts and blades."
+    price: "₹10,00,000 - ₹35,00,000",
+    uses: ["Harvesting crops like wheat, rice, maize"],
+    suitableFor: "Large farms, commercial operations",
+    maintenance: "High (Blade sharpening, engine and hydraulic checks)",
+    advantages: ["Saves time and labor", "Reduces crop loss", "Efficient harvesting"],
+    disadvantages: ["Very high cost", "Requires skilled operator", "High maintenance"],
+    importance: "Vital for large-scale, timely harvesting.",
+    link: "https://www.tractorjunction.com/harvester/"
   },
   {
-    name: "Cold Storage Unit",
-    icon: "❄️",
-    category: "Storage",
-    priceRange: "₹2,00,000 - ₹10,00,000",
-    features: [
-      "Preserves produce freshness",
-      "Reduces post-harvest losses",
-      "Essential for perishable crops"
-    ],
-    suitableFor: ["Fruits", "Vegetables", "Flowers"],
-    maintenance: "Monitor temperature, regular servicing."
-  },
-  {
-    name: "Power Tiller",
+    name: "Shovel",
     icon: "🛠️",
+    category: "Hand Tools",
+    price: "₹300 - ₹1,000",
+    uses: ["Digging", "Moving soil, compost, or manure"],
+    suitableFor: "All farm sizes, basic tool",
+    maintenance: "Low (Keep clean and dry)",
+    advantages: ["Inexpensive", "Versatile", "Easy to use"],
+    disadvantages: ["Labor-intensive", "Limited to small areas"],
+    importance: "Basic tool for every farmer.",
+    link: "https://www.indiamart.com/proddetail/shovel-18649292462.html"
+  },
+  {
+    name: "Rake",
+    icon: "🧹",
+    category: "Hand Tools",
+    price: "₹200 - ₹800",
+    uses: ["Collecting leaves, hay, or grass", "Leveling soil"],
+    suitableFor: "All farm sizes, gardens",
+    maintenance: "Low (Keep tines straight, clean after use)",
+    advantages: ["Simple and effective", "Low cost", "No fuel required"],
+    disadvantages: ["Manual labor", "Limited to small areas"],
+    importance: "Essential for cleaning and preparing fields.",
+    link: "https://www.indiamart.com/proddetail/rake-18649292462.html"
+  },
+  {
+    name: "Cutting Tool (Sickle)",
+    icon: "🔪",
+    category: "Hand Tools",
+    price: "₹100 - ₹500",
+    uses: ["Harvesting crops by hand", "Cutting grass or weeds"],
+    suitableFor: "Small farms, gardens, manual harvesting",
+    maintenance: "Low (Sharpen blade, keep dry)",
+    advantages: ["Very low cost", "Precise cutting", "No fuel required"],
+    disadvantages: ["Labor-intensive", "Slow for large areas", "Risk of injury"],
+    importance: "Traditional tool, still vital for small-scale harvesting.",
+    link: "https://www.indiamart.com/proddetail/sickle-18649292462.html"
+  },
+  {
+    name: "Harrow",
+    icon: "🪓",
     category: "Machinery",
-    priceRange: "₹1,00,000 - ₹2,50,000",
-    features: [
-      "Compact and versatile",
-      "Ideal for small farms",
-      "Multiple attachments available"
-    ],
-    suitableFor: ["Land preparation", "Inter-cultivation"],
-    maintenance: "Check oil, tighten bolts, clean after use."
-  }
-];
-
-// Irrigation Types Data
-const irrigationTypes = [
+    price: "₹20,000 - ₹1,00,000",
+    uses: ["Breaking up soil clods", "Leveling soil", "Incorporating crop residues"],
+    suitableFor: "Medium to large farms",
+    maintenance: "Medium (Check tines/discs, lubricate bearings)",
+    advantages: ["Improves soil structure", "Prepares seedbed", "Reduces weeds"],
+    disadvantages: ["Requires tractor", "Can cause compaction if overused"],
+    importance: "Key for secondary tillage and seedbed preparation.",
+    link: "https://www.tractorjunction.com/implement/harrow/"
+  },
   {
-    name: "Drip Irrigation",
+    name: "Trailer",
+    icon: "🚚",
+    category: "Machinery",
+    price: "₹40,000 - ₹2,00,000",
+    uses: ["Transporting produce, inputs, or equipment"],
+    suitableFor: "All farm sizes, especially for moving heavy loads",
+    maintenance: "Low (Check tires, lubricate axles)",
+    advantages: ["Saves time and labor", "Versatile", "Can be attached to tractor"],
+    disadvantages: ["Requires tractor or vehicle", "Limited use without road access"],
+    importance: "Essential for efficient transport on and off the farm.",
+    link: "https://www.tractorjunction.com/implement/trailer/"
+  },
+  {
+    name: "Water Pump",
     icon: "💧",
-    cost: "₹35,000 - ₹1,20,000 per acre",
-    advantages: [
-      "Highly water-efficient (saves 30-60%)",
-      "Reduces weed growth",
-      "Minimizes evaporation loss",
-      "Improves yield and quality"
-    ],
-    disadvantages: [
-      "High initial investment",
-      "Requires regular maintenance (clogging risk)",
-      "Not ideal for all soil types"
-    ],
-    suitableCrops: ["Fruits", "Vegetables", "Flowers", "Sugarcane"],
-    notes: "Best for row crops and orchards. Government subsidies often available."
+    category: "Energy & Tech",
+    price: "₹5,000 - ₹50,000",
+    uses: ["Lifting water from wells, rivers, or tanks", "Irrigation"],
+    suitableFor: "All farm sizes, especially where water is not gravity-fed",
+    maintenance: "Medium (Check for leaks, lubricate moving parts)",
+    advantages: ["Enables irrigation", "Saves labor", "Can be powered by diesel, electric, or solar"],
+    disadvantages: ["Requires fuel or electricity", "Needs regular maintenance"],
+    importance: "Critical for water management and irrigation.",
+    link: "https://www.indiamart.com/proddetail/water-pump-18649292462.html"
   },
   {
-    name: "Sprinkler Irrigation",
-    icon: "🌦️",
-    cost: "₹25,000 - ₹1,00,000 per acre",
-    advantages: [
-      "Uniform water distribution",
-      "Suitable for undulating land",
-      "Reduces labor requirement",
-      "Can be automated"
-    ],
-    disadvantages: [
-      "Water loss due to wind/evaporation",
-      "Not ideal for all crops (e.g., some cereals)",
-      "Nozzle clogging risk"
-    ],
-    suitableCrops: ["Wheat", "Pulses", "Vegetables", "Fodder"],
-    notes: "Works well for most field crops and lawns."
-  },
-  {
-    name: "Surface/Furrow Irrigation",
-    icon: "🌊",
-    cost: "₹5,000 - ₹15,000 per acre",
-    advantages: [
-      "Low initial cost",
-      "Simple to operate",
-      "No special equipment needed"
-    ],
-    disadvantages: [
-      "High water loss (runoff, evaporation)",
-      "Uneven distribution possible",
-      "Labor intensive"
-    ],
-    suitableCrops: ["Rice", "Wheat", "Maize", "Sugarcane"],
-    notes: "Traditional method, best for heavy soils and leveled fields."
-  },
-  {
-    name: "Subsurface Irrigation",
-    icon: "🕳️",
-    cost: "₹60,000 - ₹2,00,000 per acre",
-    advantages: [
-      "Very efficient water use",
-      "Reduces disease risk",
-      "No surface evaporation"
-    ],
-    disadvantages: [
-      "Very high installation cost",
-      "Difficult to monitor and repair",
-      "Not suitable for all soils"
-    ],
-    suitableCrops: ["Vegetables", "Fruits", "Flowers"],
-    notes: "Used in high-value horticulture and research."
+    name: "Motor",
+    icon: "⚙️",
+    category: "Energy & Tech",
+    price: "₹3,000 - ₹30,000",
+    uses: ["Powering pumps, threshers, and other equipment"],
+    suitableFor: "All farm sizes, especially for mechanized operations",
+    maintenance: "Medium (Check wiring, lubricate bearings)",
+    advantages: ["Versatile", "Reduces manual labor", "Can be used for multiple applications"],
+    disadvantages: ["Requires electricity or fuel", "Needs regular maintenance"],
+    importance: "Drives a variety of farm equipment, essential for mechanization.",
+    link: "https://www.indiamart.com/proddetail/electric-motor-18649292462.html"
   }
 ];
 
-// Government Schemes Data
-const governmentSchemes = [
-  {
-    name: "PM-KISAN",
-    icon: "💰",
-    fullName: "Pradhan Mantri Kisan Samman Nidhi",
-    description: "Direct income support of ₹6,000 per year to eligible farmer families",
-    benefits: [
-      "₹6,000 per year in 3 equal installments",
-      "Direct bank transfer",
-      "No middlemen involved",
-      "Covers all farming families"
-    ],
-    eligibility: [
-      "Small and marginal farmers",
-      "Landholding up to 2 hectares",
-      "Valid bank account",
-      "Aadhaar linked"
-    ],
-    applicationProcess: "Apply through Common Service Centers (CSC) or online portal",
-    website: "pmkisan.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMFBY",
-    icon: "🛡️",
-    fullName: "Pradhan Mantri Fasal Bima Yojana",
-    description: "Comprehensive crop insurance scheme to protect farmers against natural calamities",
-    benefits: [
-      "Covers yield losses due to natural calamities",
-      "Affordable premium rates",
-      "Quick claim settlement",
-      "Covers all food and oilseed crops"
-    ],
-    eligibility: [
-      "All farmers growing notified crops",
-      "Compulsory for loanee farmers",
-      "Voluntary for non-loanee farmers",
-      "Valid land records required"
-    ],
-    applicationProcess: "Apply through banks, insurance companies, or online portal",
-    website: "pmfby.gov.in",
-    status: "Active"
-  },
-  {
-    name: "Soil Health Card",
-    icon: "📋",
-    fullName: "Soil Health Card Scheme",
-    description: "Free soil testing and recommendations for balanced fertilizer use",
-    benefits: [
-      "Free soil testing every 3 years",
-      "Personalized fertilizer recommendations",
-      "Reduces input costs",
-      "Improves soil fertility"
-    ],
-    eligibility: [
-      "All farmers",
-      "Valid land records",
-      "Aadhaar linked",
-      "No income limit"
-    ],
-    applicationProcess: "Apply at nearest soil testing laboratory or online",
-    website: "soilhealth.dac.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMKSY",
-    icon: "💧",
-    fullName: "Pradhan Mantri Krishi Sinchayee Yojana",
-    description: "Comprehensive irrigation scheme to ensure water to every field",
-    benefits: [
-      "50% subsidy on micro-irrigation",
-      "90% subsidy for small/marginal farmers",
-      "Water conservation",
-      "Increased crop productivity"
-    ],
-    eligibility: [
-      "All farmers",
-      "Valid land records",
-      "Water source available",
-      "Technical feasibility"
-    ],
-    applicationProcess: "Apply through state agriculture department",
-    website: "pmksy.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMFME",
-    icon: "🏭",
-    fullName: "Pradhan Mantri Formalisation of Micro Food Processing Enterprises",
-    description: "Support for food processing units and value addition",
-    benefits: [
-      "35% subsidy on project cost",
-      "Credit linked assistance",
-      "Skill development training",
-      "Market linkage support"
-    ],
-    eligibility: [
-      "Micro food processing units",
-      "Individual entrepreneurs",
-      "Self-help groups",
-      "Producer organizations"
-    ],
-    applicationProcess: "Apply through state nodal agencies",
-    website: "pmfme.mofpi.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMKSY-PDMC",
-    icon: "🏗️",
-    fullName: "PMKSY - Per Drop More Crop",
-    description: "Micro-irrigation scheme for water use efficiency",
-    benefits: [
-      "55% subsidy for small/marginal farmers",
-      "45% subsidy for other farmers",
-      "Drip and sprinkler systems",
-      "Water saving up to 50%"
-    ],
-    eligibility: [
-      "All farmers",
-      "Suitable crops",
-      "Water availability",
-      "Technical feasibility"
-    ],
-    applicationProcess: "Apply through agriculture department or online",
-    website: "pmksy.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMKSY-AIBP",
-    icon: "🌊",
-    fullName: "PMKSY - Accelerated Irrigation Benefits Programme",
-    description: "Financial assistance for major and medium irrigation projects",
-    benefits: [
-      "Central assistance for irrigation projects",
-      "Faster project completion",
-      "Increased irrigation potential",
-      "Better water management"
-    ],
-    eligibility: [
-      "State governments",
-      "Irrigation projects",
-      "Technical approval",
-      "Environmental clearance"
-    ],
-    applicationProcess: "State governments apply to central ministry",
-    website: "pmksy.gov.in",
-    status: "Active"
-  },
-  {
-    name: "PMKSY-HKKP",
-    icon: "🏞️",
-    fullName: "PMKSY - Har Khet Ko Pani",
-    description: "Assistance for creation of new water sources and restoration",
-    benefits: [
-      "New water source creation",
-      "Restoration of water bodies",
-      "Groundwater development",
-      "Water harvesting structures"
-    ],
-    eligibility: [
-      "All farmers",
-      "Water scarce areas",
-      "Technical feasibility",
-      "Community participation"
-    ],
-    applicationProcess: "Apply through state agriculture department",
-    website: "pmksy.gov.in",
-    status: "Active"
-  }
+const equipmentCategories = ["All", "Machinery", "Crop Care", "Planting", "Energy & Tech", "Hand Tools"];
+
+const features = [
+  { name: "Crop Suggestions", icon: "🌾" },
+  { name: "Yield Prediction", icon: "📊" },
+  { name: "Irrigation Advice", icon: "💧" },
+  { name: "Equipment Guide", icon: "🚜" },
+  { name: "Cost Analysis", icon: "💰" },
+  { name: "Government Schemes", icon: "🏛️" },
+  { name: "Harvest Planning", icon: "🌾" },
+  { name: "Weather Updates", icon: "🌤️" },
+  { name: "Nearby Marketplace/Mandi", icon: "🏬" },
 ];
 
-// Harvest Planning Data
-const harvestPlanningData = {
-  crops: [
-    {
-      name: "Wheat",
-      icon: "🌾",
-      harvestTiming: {
-        optimal: "March-April (Rabi)",
-        indicators: ["Golden yellow color", "Hard grains", "Moisture content 14-16%"],
-        duration: "7-10 days window"
-      },
-      storage: {
-        conditions: "Cool, dry place (15-20°C)",
-        moisture: "Below 12%",
-        containers: "Gunny bags, metal bins",
-        duration: "6-12 months"
-      },
-      marketAnalysis: {
-        peakPrices: "October-December",
-        demand: "High throughout year",
-        storageValue: "Good for long-term storage"
-      },
-      postHarvest: [
-        "Clean and grade grains",
-        "Treat with approved pesticides",
-        "Monitor for pests regularly",
-        "Maintain proper ventilation"
-      ]
-    },
-    {
-      name: "Rice",
-      icon: "🍚",
-      harvestTiming: {
-        optimal: "September-October (Kharif)",
-        indicators: ["80-85% grains matured", "Yellowing of leaves", "Moisture 20-25%"],
-        duration: "5-7 days window"
-      },
-      storage: {
-        conditions: "Cool, dry place (10-15°C)",
-        moisture: "Below 13%",
-        containers: "Hermetic bags, silos",
-        duration: "8-12 months"
-      },
-      marketAnalysis: {
-        peakPrices: "January-March",
-        demand: "Consistent high demand",
-        storageValue: "Excellent for storage"
-      },
-      postHarvest: [
-        "Dry to 12-13% moisture",
-        "Remove broken grains",
-        "Store in airtight containers",
-        "Regular quality checks"
-      ]
-    },
-    {
-      name: "Corn/Maize",
-      icon: "🌽",
-      harvestTiming: {
-        optimal: "September-October",
-        indicators: ["Kernels hard and dented", "Brown silks", "Moisture 25-30%"],
-        duration: "10-14 days window"
-      },
-      storage: {
-        conditions: "Well-ventilated area",
-        moisture: "Below 14%",
-        containers: "Cribs, silos, bags",
-        duration: "6-8 months"
-      },
-      marketAnalysis: {
-        peakPrices: "November-December",
-        demand: "High for feed industry",
-        storageValue: "Moderate storage value"
-      },
-      postHarvest: [
-        "Dry to 13-14% moisture",
-        "Remove damaged cobs",
-        "Control temperature",
-        "Monitor for aflatoxin"
-      ]
-    },
-    {
-      name: "Soybeans",
-      icon: "🫘",
-      harvestTiming: {
-        optimal: "October-November",
-        indicators: ["Pods brown and dry", "Seeds rattle in pods", "Moisture 13-15%"],
-        duration: "7-10 days window"
-      },
-      storage: {
-        conditions: "Cool, dry storage",
-        moisture: "Below 12%",
-        containers: "Bulk storage, bags",
-        duration: "12-18 months"
-      },
-      marketAnalysis: {
-        peakPrices: "February-April",
-        demand: "High for oil extraction",
-        storageValue: "Excellent storage value"
-      },
-      postHarvest: [
-        "Clean and grade beans",
-        "Maintain low moisture",
-        "Regular aeration",
-        "Monitor for mold"
-      ]
-    },
-    {
-      name: "Cotton",
-      icon: "🧶",
-      harvestTiming: {
-        optimal: "October-December",
-        indicators: ["Bolls fully opened", "White fluffy fibers", "Dry weather"],
-        duration: "Multiple pickings over 2-3 months"
-      },
-      storage: {
-        conditions: "Dry, well-ventilated",
-        moisture: "Below 8%",
-        containers: "Compressed bales",
-        duration: "12-24 months"
-      },
-      marketAnalysis: {
-        peakPrices: "March-May",
-        demand: "High for textile industry",
-        storageValue: "Good storage value"
-      },
-      postHarvest: [
-        "Grade by fiber length",
-        "Remove impurities",
-        "Compress into bales",
-        "Store in dry conditions"
-      ]
-    },
-    {
-      name: "Sugarcane",
-      icon: "🎋",
-      harvestTiming: {
-        optimal: "November-March",
-        indicators: ["12-18 months growth", "High sucrose content", "Dry weather"],
-        duration: "3-4 months harvesting season"
-      },
-      storage: {
-        conditions: "Cannot be stored long",
-        moisture: "Process within 24-48 hours",
-        containers: "Transport to mill immediately",
-        duration: "1-2 days maximum"
-      },
-      marketAnalysis: {
-        peakPrices: "December-February",
-        demand: "High for sugar mills",
-        storageValue: "No storage value"
-      },
-      postHarvest: [
-        "Transport immediately",
-        "Avoid bruising",
-        "Maintain freshness",
-        "Process quickly"
-      ]
-    }
-  ],
-  generalTips: {
-    timing: [
-      "Monitor weather forecasts for dry harvesting conditions",
-      "Check crop maturity indicators regularly",
-      "Plan harvest during optimal moisture content",
-      "Avoid harvesting during rain or high humidity"
-    ],
-    equipment: [
-      "Ensure harvesters are properly maintained",
-      "Calibrate equipment for optimal performance",
-      "Have backup equipment ready",
-      "Train operators on proper techniques"
-    ],
-    labor: [
-      "Arrange labor well in advance",
-      "Provide proper training and safety equipment",
-      "Plan for peak labor requirements",
-      "Consider mechanization for efficiency"
-    ]
-  }
-};
-
-// Weather Updates Data
-const weatherData = {
-  currentWeather: {
-    temperature: "28°C",
-    humidity: "65%",
-    windSpeed: "12 km/h",
-    precipitation: "0%",
-    uvIndex: "High",
-    visibility: "10 km"
+// Mock data for nearby marketplaces
+const mockMarketplaces = [
+  {
+    name: "Krishi Upaj Mandi, Indore",
+    location: "Indore, Madhya Pradesh",
+    distance: "5.2 km",
+    crops: ["Wheat", "Soybean", "Maize"],
+    googleMapsUrl: "https://www.google.com/maps?q=Krishi+Upaj+Mandi+Indore"
   },
-  forecast: [
-    {
-      day: "Today",
-      date: "2024-01-15",
-      high: "32°C",
-      low: "22°C",
-      condition: "Sunny",
-      icon: "☀️",
-      precipitation: "0%",
-      windSpeed: "10 km/h"
-    },
-    {
-      day: "Tomorrow",
-      date: "2024-01-16",
-      high: "30°C",
-      low: "20°C",
-      condition: "Partly Cloudy",
-      icon: "⛅",
-      precipitation: "20%",
-      windSpeed: "15 km/h"
-    },
-    {
-      day: "Wednesday",
-      date: "2024-01-17",
-      high: "28°C",
-      low: "18°C",
-      condition: "Light Rain",
-      icon: "🌦️",
-      precipitation: "60%",
-      windSpeed: "20 km/h"
-    },
-    {
-      day: "Thursday",
-      date: "2024-01-18",
-      high: "26°C",
-      low: "16°C",
-      condition: "Rainy",
-      icon: "🌧️",
-      precipitation: "80%",
-      windSpeed: "25 km/h"
-    },
-    {
-      day: "Friday",
-      date: "2024-01-19",
-      high: "29°C",
-      low: "19°C",
-      condition: "Cloudy",
-      icon: "☁️",
-      precipitation: "30%",
-      windSpeed: "12 km/h"
-    }
-  ],
-  farmingAlerts: [
-    {
-      type: "Harvest Alert",
-      severity: "High",
-      message: "Optimal harvesting conditions expected for wheat in the next 3 days",
-      icon: "🌾",
-      color: "#16a34a"
-    },
-    {
-      type: "Irrigation Alert",
-      severity: "Medium",
-      message: "Low rainfall expected - consider irrigation for moisture-sensitive crops",
-      icon: "💧",
-      color: "#f59e0b"
-    },
-    {
-      type: "Pest Alert",
-      severity: "Low",
-      message: "High humidity may increase pest activity - monitor crops closely",
-      icon: "🦗",
-      color: "#dc2626"
-    }
-  ],
-  cropSpecificWeather: [
-    {
-      crop: "Wheat",
-      icon: "🌾",
-      optimalConditions: {
-        temperature: "20-25°C",
-        humidity: "60-70%",
-        rainfall: "Moderate",
-        windSpeed: "5-15 km/h"
-      },
-      currentStatus: "Optimal",
-      recommendations: [
-        "Continue with planned harvest activities",
-        "Monitor for any sudden weather changes",
-        "Ensure proper storage conditions"
-      ]
-    },
-    {
-      crop: "Rice",
-      icon: "🍚",
-      optimalConditions: {
-        temperature: "25-35°C",
-        humidity: "70-80%",
-        rainfall: "High",
-        windSpeed: "5-10 km/h"
-      },
-      currentStatus: "Good",
-      recommendations: [
-        "Maintain water levels in paddy fields",
-        "Watch for heavy rainfall that may cause flooding",
-        "Prepare for potential pest outbreaks"
-      ]
-    },
-    {
-      crop: "Corn/Maize",
-      icon: "🌽",
-      optimalConditions: {
-        temperature: "25-30°C",
-        humidity: "65-75%",
-        rainfall: "Moderate",
-        windSpeed: "10-20 km/h"
-      },
-      currentStatus: "Caution",
-      recommendations: [
-        "Monitor for drought conditions",
-        "Consider additional irrigation if needed",
-        "Watch for wind damage to tall plants"
-      ]
-    },
-    {
-      crop: "Soybeans",
-      icon: "🫘",
-      optimalConditions: {
-        temperature: "20-30°C",
-        humidity: "60-70%",
-        rainfall: "Moderate",
-        windSpeed: "5-15 km/h"
-      },
-      currentStatus: "Optimal",
-      recommendations: [
-        "Ideal conditions for growth and development",
-        "Continue with regular maintenance",
-        "Monitor soil moisture levels"
-      ]
-    }
-  ],
-  weatherTips: {
-    general: [
-      "Check weather forecasts daily before planning farm activities",
-      "Adjust irrigation schedules based on rainfall predictions",
-      "Protect crops from extreme weather events",
-      "Monitor soil moisture levels regularly"
-    ],
-    seasonal: [
-      "Summer: Focus on irrigation and heat stress management",
-      "Monsoon: Prepare for heavy rainfall and flooding",
-      "Winter: Protect crops from frost and cold damage",
-      "Spring: Monitor for pest outbreaks and disease"
-    ],
-    emergency: [
-      "Have emergency contact numbers ready",
-      "Keep backup power sources for critical equipment",
-      "Store essential supplies for extreme weather",
-      "Develop evacuation plans for severe storms"
-    ]
+  {
+    name: "APMC Market, Navi Mumbai",
+    location: "Navi Mumbai, Maharashtra",
+    distance: "12.8 km",
+    crops: ["Rice", "Onion", "Tomato"],
+    googleMapsUrl: "https://www.google.com/maps?q=APMC+Market+Navi+Mumbai"
+  },
+  {
+    name: "Azadpur Mandi",
+    location: "Delhi",
+    distance: "3.5 km",
+    crops: ["Potato", "Banana", "Brinjal"],
+    googleMapsUrl: "https://www.google.com/maps?q=Azadpur+Mandi+Delhi"
+  },
+  {
+    name: "Koyambedu Market",
+    location: "Chennai, Tamil Nadu",
+    distance: "8.1 km",
+    crops: ["Onion", "Tomato", "Banana"],
+    googleMapsUrl: "https://www.google.com/maps?q=Koyambedu+Market+Chennai"
   }
-};
+];
 
 const App: React.FC = () => {
-  const [state, setState] = useState("");
-  const [district, setDistrict] = useState("");
-  const [crop, setCrop] = useState("");
-  const [harvestingDate, setHarvestingDate] = useState("");
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
   const [showFeatures, setShowFeatures] = useState(false);
-  const [showCropSuggestions, setShowCropSuggestions] = useState(false);
-  const [showCostAnalysis, setShowCostAnalysis] = useState(false);
-  const [showEquipmentGuide, setShowEquipmentGuide] = useState(false);
-  const [showIrrigationAdvice, setShowIrrigationAdvice] = useState(false);
-  const [showYieldPrediction, setShowYieldPrediction] = useState(false);
-  const [showGovernmentSchemes, setShowGovernmentSchemes] = useState(false);
-  const [showHarvestPlanning, setShowHarvestPlanning] = useState(false);
-  const [showWeatherUpdates, setShowWeatherUpdates] = useState(false);
-  const [showFertilizerDetails, setShowFertilizerDetails] = useState(false);
-  const { t, i18n } = useTranslation();
-  const [language, setLanguage] = useState("en");
+  const [userState, setUserState] = useState("");
+  const [userDistrict, setUserDistrict] = useState("");
+  const [cropName, setCropName] = useState("");
+  const [harvestingDate, setHarvestingDate] = useState("");
+  
+  // Government Schemes State
+  const [showSchemesModal, setShowSchemesModal] = useState(false);
+  const [schemesCategory, setSchemesCategory] = useState("All Categories");
+  const [schemesSearch, setSchemesSearch] = useState("");
 
-  useEffect(() => {
-    i18n.changeLanguage(language);
-  }, [language, i18n]);
+  // Irrigation Advice Modal State
+  const [showIrrigationModal, setShowIrrigationModal] = useState(false);
 
-  // Debug state changes
-  useEffect(() => {
-    console.log("showCropSuggestions:", showCropSuggestions);
-  }, [showCropSuggestions]);
+  // Crop Suggestions Modal State
+  const [showCropSuggestionsModal, setShowCropSuggestionsModal] = useState(false);
 
-  useEffect(() => {
-    console.log("showCostAnalysis:", showCostAnalysis);
-  }, [showCostAnalysis]);
+  // Equipment Guide Modal State
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
 
-  // Cost Analysis Data
-  const costAnalysisData = {
-    costCategories: [
-      {
-        name: "Input Costs",
-        icon: "🌱",
-        items: [
-          { name: "Seeds", costPerAcre: 1200, description: "High-quality certified seeds" },
-          { name: "Fertilizers", costPerAcre: 3000, description: "NPK and organic fertilizers" },
-          { name: "Pesticides", costPerAcre: 1500, description: "Crop protection chemicals" },
-          { name: "Bio-fertilizers", costPerAcre: 800, description: "Organic soil enhancers" }
-        ]
-      },
-      {
-        name: "Labor Costs",
-        icon: "👨‍🌾",
-        items: [
-          { name: "Land Preparation", costPerAcre: 2000, description: "Plowing, harrowing, leveling" },
-          { name: "Sowing/Planting", costPerAcre: 1500, description: "Manual or mechanical planting" },
-          { name: "Weeding", costPerAcre: 1200, description: "Manual and chemical weed control" },
-          { name: "Harvesting", costPerAcre: 2500, description: "Manual or mechanical harvesting" },
-          { name: "Post-harvest", costPerAcre: 1000, description: "Threshing, cleaning, storage" }
-        ]
-      },
-      {
-        name: "Equipment & Machinery",
-        icon: "🚜",
-        items: [
-          { name: "Tractor Operations", costPerAcre: 2500, description: "Tractor hire and fuel" },
-          { name: "Implements", costPerAcre: 1500, description: "Plows, harrows, seed drills" },
-          { name: "Irrigation Equipment", costPerAcre: 2000, description: "Pumps, pipes, sprinklers" },
-          { name: "Harvesting Equipment", costPerAcre: 3000, description: "Combine harvesters, threshers" }
-        ]
-      },
-      {
-        name: "Infrastructure",
-        icon: "🏗️",
-        items: [
-          { name: "Irrigation System", costPerAcre: 5000, description: "Drip/sprinkler installation" },
-          { name: "Storage Facilities", costPerAcre: 3000, description: "Warehouses, silos" },
-          { name: "Fencing", costPerAcre: 2000, description: "Boundary protection" },
-          { name: "Roads & Access", costPerAcre: 1500, description: "Internal farm roads" }
-        ]
-      },
-      {
-        name: "Operational Costs",
-        icon: "⚡",
-        items: [
-          { name: "Electricity", costPerAcre: 800, description: "Pumping and processing" },
-          { name: "Fuel", costPerAcre: 1200, description: "Diesel for machinery" },
-          { name: "Transportation", costPerAcre: 1500, description: "Input delivery and output transport" },
-          { name: "Insurance", costPerAcre: 500, description: "Crop and equipment insurance" }
-        ]
-      },
-      {
-        name: "Miscellaneous",
-        icon: "📋",
-        items: [
-          { name: "Testing & Certification", costPerAcre: 300, description: "Soil testing, organic certification" },
-          { name: "Marketing", costPerAcre: 500, description: "Packaging, branding, market access" },
-          { name: "Administrative", costPerAcre: 400, description: "Record keeping, compliance" },
-          { name: "Contingency", costPerAcre: 1000, description: "Unforeseen expenses (10% buffer)" }
-        ]
-      }
-    ],
-    optimizationTips: [
-      {
-        category: "Input Optimization",
-        tips: [
-          "Use certified seeds for better germination and yield",
-          "Apply fertilizers based on soil test results",
-          "Implement integrated pest management (IPM)",
-          "Consider organic alternatives for premium markets"
-        ]
-      },
-      {
-        category: "Labor Efficiency",
-        tips: [
-          "Plan operations to minimize labor requirements",
-          "Train workers for better productivity",
-          "Use appropriate tools and equipment",
-          "Consider mechanization for large-scale operations"
-        ]
-      },
-      {
-        category: "Equipment Management",
-        tips: [
-          "Maintain equipment regularly to avoid breakdowns",
-          "Share equipment with neighboring farmers",
-          "Consider custom hiring for specialized operations",
-          "Invest in multi-purpose implements"
-        ]
-      },
-      {
-        category: "Infrastructure Planning",
-        tips: [
-          "Design irrigation systems for water efficiency",
-          "Plan storage facilities based on crop volume",
-          "Invest in infrastructure that adds long-term value",
-          "Consider government subsidies for infrastructure"
-        ]
-      }
-    ],
-    revenueStreams: [
-      {
-        name: "Primary Crop Sales",
-        description: "Main crop yield sold at market prices",
-        potential: "High",
-        reliability: "High"
-      },
-      {
-        name: "Secondary Crops",
-        description: "Intercropping and multiple cropping",
-        potential: "Medium",
-        reliability: "Medium"
-      },
-      {
-        name: "Organic Premium",
-        description: "Higher prices for organic produce",
-        potential: "High",
-        reliability: "Medium"
-      },
-      {
-        name: "Value Addition",
-        description: "Processing and packaging for higher margins",
-        potential: "Very High",
-        reliability: "Low"
-      },
-      {
-        name: "Contract Farming",
-        description: "Guaranteed prices through contracts",
-        potential: "Medium",
-        reliability: "High"
-      }
-    ]
-  };
+  // Cost Analysis Modal State
+  const [showCostAnalysisModal, setShowCostAnalysisModal] = useState(false);
 
-  // Comprehensive Crop Suggestions Data
-  const cropSuggestions = [
-    {
-      name: "Rice",
-      icon: "🌾",
-      season: "Kharif (June-October)",
-      duration: "120-150 days",
-      water: "High",
-      soil: "Clay loam",
-      states: ["WB", "UP", "PB", "TN", "AP", "TG", "BR", "OR"],
-      description: "Staple food crop, suitable for monsoon season",
-      marketPotential: "High",
-      investment: "Medium",
-      costBreakdown: {
-        seeds: 1200,
-        fertilizers: 3000,
-        pesticides: 1500,
-        irrigation: 2000,
-        labor: 8000,
-        machinery: 3000,
-        transportation: 1500,
-        miscellaneous: 1000
-      },
-      yieldPerAcre: 25, // quintals
-      marketPrice: 1800, // per quintal
-      totalCost: 0, // will be calculated
-      totalRevenue: 0, // will be calculated
-      profit: 0 // will be calculated
-    },
-    {
-      name: "Wheat",
-      icon: "🌾",
-      season: "Rabi (November-March)",
-      duration: "110-130 days",
-      water: "Medium",
-      soil: "Loamy",
-      states: ["UP", "PB", "HR", "MP", "RJ", "MH", "BR"],
-      description: "Winter crop, major food grain",
-      marketPotential: "High",
-      investment: "Medium",
-      costBreakdown: {
-        seeds: 1000,
-        fertilizers: 2500,
-        pesticides: 1200,
-        irrigation: 1500,
-        labor: 6000,
-        machinery: 2500,
-        transportation: 1200,
-        miscellaneous: 800
-      },
-      yieldPerAcre: 20, // quintals
-      marketPrice: 2000, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Maize",
-      icon: "🌽",
-      season: "Kharif & Rabi",
-      duration: "90-120 days",
-      water: "Medium",
-      soil: "Well-drained loam",
-      states: ["MP", "KA", "AP", "TG", "BR", "JH", "MH"],
-      description: "Versatile crop for food and fodder",
-      marketPotential: "Medium",
-      investment: "Low",
-      costBreakdown: {
-        seeds: 800,
-        fertilizers: 2000,
-        pesticides: 1000,
-        irrigation: 1200,
-        labor: 5000,
-        machinery: 2000,
-        transportation: 1000,
-        miscellaneous: 600
-      },
-      yieldPerAcre: 18, // quintals
-      marketPrice: 1500, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Sugarcane",
-      icon: "🎋",
-      season: "Year-round",
-      duration: "12-18 months",
-      water: "Very High",
-      soil: "Deep loam",
-      states: ["UP", "MH", "KA", "TN", "AP", "TG", "GJ"],
-      description: "Cash crop, requires long growing period",
-      marketPotential: "High",
-      investment: "High",
-      costBreakdown: {
-        seeds: 3000,
-        fertilizers: 5000,
-        pesticides: 2000,
-        irrigation: 8000,
-        labor: 15000,
-        machinery: 5000,
-        transportation: 3000,
-        miscellaneous: 2000
-      },
-      yieldPerAcre: 400, // quintals
-      marketPrice: 300, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Cotton",
-      icon: "🧶",
-      season: "Kharif",
-      duration: "150-180 days",
-      water: "Medium",
-      soil: "Black soil",
-      states: ["MH", "GJ", "MP", "AP", "TG", "RJ", "KA"],
-      description: "Fiber crop, drought resistant",
-      marketPotential: "Medium",
-      investment: "Medium",
-      costBreakdown: {
-        seeds: 1500,
-        fertilizers: 3000,
-        pesticides: 2500,
-        irrigation: 2000,
-        labor: 10000,
-        machinery: 3000,
-        transportation: 2000,
-        miscellaneous: 1500
-      },
-      yieldPerAcre: 8, // quintals
-      marketPrice: 6000, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Pulses",
-      icon: "🫘",
-      season: "Rabi & Kharif",
-      duration: "60-120 days",
-      water: "Low",
-      soil: "Sandy loam",
-      states: ["MP", "MH", "UP", "RJ", "KA", "AP", "TG"],
-      description: "Protein-rich, nitrogen fixing",
-      marketPotential: "Medium",
-      investment: "Low",
-      costBreakdown: {
-        seeds: 600,
-        fertilizers: 1500,
-        pesticides: 800,
-        irrigation: 800,
-        labor: 4000,
-        machinery: 1500,
-        transportation: 800,
-        miscellaneous: 500
-      },
-      yieldPerAcre: 6, // quintals
-      marketPrice: 4000, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Oilseeds",
-      icon: "🫒",
-      season: "Rabi & Kharif",
-      duration: "90-150 days",
-      water: "Low-Medium",
-      soil: "Sandy loam",
-      states: ["MP", "RJ", "MH", "UP", "AP", "TG", "KA"],
-      description: "Edible oils and industrial use",
-      marketPotential: "Medium",
-      investment: "Low",
-      costBreakdown: {
-        seeds: 800,
-        fertilizers: 1800,
-        pesticides: 1000,
-        irrigation: 1000,
-        labor: 5000,
-        machinery: 1800,
-        transportation: 1000,
-        miscellaneous: 600
-      },
-      yieldPerAcre: 8, // quintals
-      marketPrice: 3500, // per quintal
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Vegetables",
-      icon: "🥬",
-      season: "Year-round",
-      duration: "30-120 days",
-      water: "High",
-      soil: "Rich loam",
-      states: ["All States"],
-      description: "Short duration, high value crops",
-      marketPotential: "High",
-      investment: "Medium",
-      costBreakdown: {
-        seeds: 500,
-        fertilizers: 2000,
-        pesticides: 1200,
-        irrigation: 1500,
-        labor: 8000,
-        machinery: 1000,
-        transportation: 1000,
-        miscellaneous: 800
-      },
-      yieldPerAcre: 15, // tons
-      marketPrice: 2000, // per ton
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
-    },
-    {
-      name: "Fruits",
-      icon: "🍎",
-      season: "Year-round",
-      duration: "3-8 years",
-      water: "Medium",
-      soil: "Well-drained",
-      states: ["All States"],
-      description: "Perennial crops, long-term investment",
-      marketPotential: "High",
-      investment: "High",
-      costBreakdown: {
-        seeds: 2000,
-        fertilizers: 3000,
-        pesticides: 2000,
-        irrigation: 3000,
-        labor: 12000,
-        machinery: 2000,
-        transportation: 1500,
-        miscellaneous: 1500
-      },
-      yieldPerAcre: 10, // tons
-      marketPrice: 5000, // per ton
-      totalCost: 0,
-      totalRevenue: 0,
-      profit: 0
+  // Yield Prediction Modal State
+  const [showYieldPredictionModal, setShowYieldPredictionModal] = useState(false);
+
+  // Weather Updates Modal State
+  const [showWeatherUpdatesModal, setShowWeatherUpdatesModal] = useState(false);
+
+  // Harvest Planning Modal State
+  const [showHarvestPlanningModal, setShowHarvestPlanningModal] = useState(false);
+
+  // Nearby Marketplace Modal State
+  const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
+
+  // Admin Login Modal State
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+
+  // Theme state
+  const [theme, setTheme] = useState<'bright' | 'dark'>('bright');
+  // Language state
+  const [language, setLanguage] = useState('en');
+
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
     }
-  ];
+  }, [theme]);
 
-  // Calculate costs and profits for each crop
-  const calculateCropEconomics = (crop: any) => {
-    const totalCost = Object.values(crop.costBreakdown).reduce((sum: number, cost: any) => sum + (cost as number), 0);
-    const totalRevenue = crop.yieldPerAcre * crop.marketPrice;
-    const profit = totalRevenue - totalCost;
-    
-    return {
-      ...crop,
-      totalCost,
-      totalRevenue,
-      profit
-    };
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setLanguage(e.target.value);
+    if (i18n && i18n.changeLanguage) {
+      i18n.changeLanguage(e.target.value);
+    }
   };
-
-  const cropsWithEconomics = cropSuggestions.map(calculateCropEconomics);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      // Simulate AI analysis with mock data
-      const cropKey = crop.trim().toLowerCase();
-      const priceInfo = MOCK_PRICES[cropKey] || {
-        min: 1000,
-        max: 2000,
-        period: "Varies by crop"
-      };
-      setResult({
-        markets: MOCK_MARKETS,
-        price: priceInfo,
-        harvestingDate // include in result if needed
-      });
-      setLoading(false);
-    }, 1200);
+    console.log("State:", userState);
+    console.log("District:", userDistrict);
+    console.log("Crop Name:", cropName);
+    console.log("Harvesting Date:", harvestingDate);
+    // Here you can add logic to process the form data
   };
 
-  const handleReset = () => {
-    setState("");
-    setDistrict("");
-    setCrop("");
+  // Reset form fields
+  const resetForm = () => {
+    setUserState("");
+    setUserDistrict("");
+    setCropName("");
     setHarvestingDate("");
-    setResult(null);
   };
 
-  const features = [
-    { name: t("Crop Suggestions"), icon: "🌾", description: t("Get AI-powered crop recommendations based on soil, climate, and market conditions") },
-    { name: t("Yield Prediction"), icon: "📊", description: t("Predict crop yields using advanced AI algorithms and historical data") },
-    { name: t("Irrigation Advice"), icon: "💧", description: t("Smart irrigation recommendations for optimal water usage and crop health") },
-    { name: t("Equipment Guide"), icon: "🚜", description: t("Comprehensive guide to farming equipment, prices, and maintenance") },
-    { name: t("Cost Analysis"), icon: "💰", description: t("Detailed cost breakdown and financial analysis for different crops") },
-    { name: t("Fertilizer Details"), icon: "🌿", description: t("Comprehensive information on fertilizers, usage, and best practices") },
-    { name: t("Government Schemes"), icon: "🏛️", description: t("Information about government subsidies and support programs") },
-    { name: t("Harvest Planning"), icon: "🌾", description: t("Optimal harvest timing, storage, and post-harvest management strategies") },
-    { name: t("Weather Updates"), icon: "🌤️", description: t("Real-time weather data, forecasts, and farming-specific weather alerts") }
-  ];
+  const handleShowSchemes = () => {
+    setShowFeatures(false);
+    setShowSchemesModal(true);
+  };
+  
+  const handleCloseSchemes = () => {
+    setShowSchemesModal(false);
+  };
+  
+  const handleShowIrrigation = () => {
+    setShowFeatures(false);
+    setShowIrrigationModal(true);
+  };
+
+  const handleCloseIrrigation = () => {
+    setShowIrrigationModal(false);
+  };
+  
+  const handleShowCropSuggestions = () => {
+    setShowFeatures(false);
+    setShowCropSuggestionsModal(true);
+  };
+  
+  const handleCloseCropSuggestions = () => {
+    setShowCropSuggestionsModal(false);
+  };
+
+  const handleShowEquipment = () => {
+    setShowFeatures(false);
+    setShowEquipmentModal(true);
+  };
+  
+  const handleCloseEquipment = () => {
+    setShowEquipmentModal(false);
+  };
+
+  const handleShowCostAnalysis = () => {
+    setShowFeatures(false);
+    setShowCostAnalysisModal(true);
+  };
+
+  const handleCloseCostAnalysis = () => {
+    setShowCostAnalysisModal(false);
+  };
+
+  const handleShowYieldPrediction = () => {
+    setShowFeatures(false);
+    setShowYieldPredictionModal(true);
+  };
+
+  const handleCloseYieldPrediction = () => {
+    setShowYieldPredictionModal(false);
+  };
+
+  const handleShowWeatherUpdates = () => {
+    setShowFeatures(false);
+    setShowWeatherUpdatesModal(true);
+  };
+
+  const handleCloseWeatherUpdates = () => {
+    setShowWeatherUpdatesModal(false);
+  };
+
+  const handleShowHarvestPlanning = () => {
+    setShowFeatures(false);
+    setShowHarvestPlanningModal(true);
+  };
+
+  const handleCloseHarvestPlanning = () => {
+    setShowHarvestPlanningModal(false);
+  };
+
+  const handleShowMarketplace = () => {
+    setShowFeatures(false);
+    setShowMarketplaceModal(true);
+  };
+
+  const handleCloseMarketplace = () => {
+    setShowMarketplaceModal(false);
+  };
+
+  const filteredSchemes = governmentSchemes.filter(scheme => {
+    const categoryMatch = schemesCategory === "All Categories" || scheme.category === schemesCategory;
+    const searchMatch = scheme.name.toLowerCase().includes(schemesSearch.toLowerCase()) || 
+                        scheme.description.toLowerCase().includes(schemesSearch.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   return (
     <div style={{
       minHeight: "100vh",
       background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)",
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      position: "relative"
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
-      {/* Header */}
-      <header style={{
-        background: "rgba(255, 255, 255, 0.95)",
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(34, 197, 94, 0.1)",
-        height: 72,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 40px",
-        position: "sticky",
-        top: 0,
-        zIndex: 50
-      }}>
-        {/* Logo (Top Left) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 44,
-            height: 44,
-            background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-            borderRadius: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 20,
-            boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)"
-          }}>
-            🌾
+      <div style={{ maxWidth: 840, margin: '0 auto', padding: '0 20px' }}>
+        {/* Header */}
+        <header style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "32px 0 24px 0",
+          background: "none"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <img src="/logo.png" alt="Intellifarm Systems Logo" style={{ height: 48, marginRight: 12 }} />
           </div>
-          <span style={{
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Language Selector */}
+            <select
+              value={language}
+              onChange={handleLanguageChange}
+              style={{
+                padding: "8px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: 8,
+                fontSize: 15,
+                background: "#fff",
+                color: "#14532d",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+              aria-label="Select language"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+              <option value="mr">मराठी</option>
+              <option value="te">తెలుగు</option>
+              <option value="kn">ಕನ್ನಡ</option>
+            </select>
+            <button
+              onClick={() => setShowFeatures(v => !v)}
+              style={{
+                background: "rgba(34, 197, 94, 0.1)",
+                border: "1px solid rgba(34, 197, 94, 0.2)",
+                borderRadius: 10,
+                width: 48,
+                height: 48,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                gap: 4
+              }}
+              aria-label="More features"
+            >
+              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+              <span style={{ width: 20, height: 2, background: "#16a34a", borderRadius: 1 }} />
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "80px 0px",
+          margin: "0 auto"
+        }}>
+          <h1 style={{
             color: "#16a34a",
-            fontWeight: 600,
-            fontSize: 16,
+            fontWeight: 800,
+            fontSize: "clamp(32px, 5vw, 48px)",
+            lineHeight: 1.2,
+            marginBottom: 16,
             letterSpacing: "-0.025em"
           }}>
-            AI Farmer
-          </span>
+            {t('welcome')}
+          </h1>
+          <p style={{
+            color: "#6B7280",
+            fontSize: 18,
+            lineHeight: 1.6,
+            margin: 0,
+            fontWeight: 400,
+            marginBottom: 32
+          }}>
+            {t('subtitle', 'Your one-stop platform for smart, sustainable, and profitable farming. Explore features using the menu above.')}
+          </p>
+
+          {/* Crop Information Form */}
+          <section style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 4px 12px rgba(34, 197, 94, 0.08)",
+            padding: 32,
+            marginBottom: 40,
+            width: "100%",
+            maxWidth: 500
+          }}>
+            <h2 style={{
+              color: "#16a34a",
+              fontWeight: 700,
+              fontSize: 24,
+              marginBottom: 24,
+              textAlign: "center"
+            }}>
+              {t('cropInformation')}
+            </h2>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div>
+                <label htmlFor="userState" style={{
+                  display: "block",
+                  color: "#374151",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginBottom: 8
+                }}>
+                  {t('yourState', 'Your State')}
+                </label>
+                <select
+                  id="userState"
+                  value={userState}
+                  onChange={(e) => setUserState(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#16a34a";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                  }}
+                >
+                  <option value="">{t('selectYourState', 'Select your state')}</option>
+                  {indianStates.map((state, idx) => (
+                    <option key={idx} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="userDistrict" style={{
+                  display: "block",
+                  color: "#374151",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginBottom: 8
+                }}>
+                  {t('yourDistrict', 'Your District')}
+                </label>
+                <input
+                  type="text"
+                  id="userDistrict"
+                  value={userDistrict}
+                  onChange={(e) => setUserDistrict(e.target.value)}
+                  placeholder={t('enterYourDistrict', 'Enter your district')}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#16a34a";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="cropName" style={{
+                  display: "block",
+                  color: "#374151",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginBottom: 8
+                }}>
+                  {t('cropName', 'Crop Name')}
+                </label>
+                <input
+                  type="text"
+                  id="cropName"
+                  value={cropName}
+                  onChange={(e) => setCropName(e.target.value)}
+                  placeholder={t('enterCropName', 'Enter crop name (e.g., Wheat, Rice, Corn)')}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#16a34a";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="harvestingDate" style={{
+                  display: "block",
+                  color: "#374151",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  marginBottom: 8
+                }}>
+                  {t('harvestingDate', 'Harvesting Date')}
+                </label>
+                <input
+                  type="date"
+                  id="harvestingDate"
+                  value={harvestingDate}
+                  onChange={(e) => setHarvestingDate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    fontSize: 16,
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                    boxSizing: "border-box"
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#16a34a";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 16,
+                    padding: "12px 0",
+                    border: "none",
+                    borderRadius: 8,
+                    boxShadow: "0 2px 8px #bbf7d0",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {t('getPricePrediction')}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  style={{
+                    flex: 1,
+                    background: "#f1f5f9",
+                    color: "#16a34a",
+                    fontWeight: 700,
+                    fontSize: 16,
+                    padding: "12px 0",
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    boxShadow: "0 2px 8px #e0f2fe",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {t('reset')}
+                </button>
+              </div>
+            </form>
+          </section>
+        </main>
+
+        <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <button
+                onClick={() => setShowAdminLoginModal(true)}
+                style={{
+                    background: 'transparent',
+                    color: '#16a34a',
+                    fontWeight: 600,
+                    fontSize: 16,
+                    padding: '10px 20px',
+                    border: '1px solid #16a34a',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                }}
+            >
+                Admin Login
+            </button>
         </div>
 
-        {/* App Name (Top Center) */}
-        <div style={{
-          position: "absolute",
-          left: "50%",
-          transform: "translateX(-50%)",
-          color: "#16a34a",
-          fontWeight: 700,
-          fontSize: 24,
-          letterSpacing: "-0.025em"
+        <footer style={{
+            textAlign: 'center',
+            padding: '40px 20px',
+            marginTop: '40px',
+            borderTop: '1px solid #e2e8f0'
         }}>
-          Crop Market Analyzer
-        </div>
+            <h2 style={{
+                color: '#16a34a',
+                fontWeight: 700,
+                fontSize: 24,
+                marginBottom: 24
+            }}>
+                Support
+            </h2>
+            <p style={{
+                color: '#6B7280',
+                fontSize: 16,
+                lineHeight: 1.6,
+                margin: '0 auto',
+                maxWidth: '600px',
+                marginBottom: 24
+            }}>
+                Have questions or need help? Our support team is here for you.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+                <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Email Us</h3>
+                    <a href="mailto:support@intellifarmsystems.com" style={{ color: '#16a34a', textDecoration: 'none' }}>support@intellifarmsystems.com</a>
+                </div>
+                <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Call Us</h3>
+                    <p style={{ margin: 0, color: '#6B7280' }}>+91-123-456-7890</p>
+                </div>
+            </div>
+        </footer>
+      </div>
 
-        {/* Menu Icon (Top Right) */}
-        <button
-          onClick={() => setShowFeatures(v => !v)}
-          style={{
-            background: "rgba(34, 197, 94, 0.1)",
-            border: "1px solid rgba(34, 197, 94, 0.2)",
-            borderRadius: 10,
-            width: 48,
-            height: 48,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            gap: 4
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(34, 197, 94, 0.15)";
-            e.currentTarget.style.transform = "scale(1.05)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(34, 197, 94, 0.1)";
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-          aria-label="More features"
-        >
-          <span style={{
-            width: 20, height: 2, background: "#16a34a", borderRadius: 1, transition: "all 0.2s ease"
-          }} />
-          <span style={{
-            width: 20, height: 2, background: "#16a34a", borderRadius: 1, transition: "all 0.2s ease"
-          }} />
-          <span style={{
-            width: 20, height: 2, background: "#16a34a", borderRadius: 1, transition: "all 0.2s ease"
-          }} />
-        </button>
-      </header>
+      {/* Admin Login Modal */}
+      {showAdminLoginModal && (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div style={{
+                background: '#fff',
+                borderRadius: 16,
+                padding: 32,
+                width: '100%',
+                maxWidth: 400,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                position: 'relative'
+            }}>
+                <button
+                    onClick={() => setShowAdminLoginModal(false)}
+                    style={{
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 24,
+                        color: '#6B7280',
+                        cursor: 'pointer',
+                    }}
+                    aria-label="Close"
+                >
+                    &times;
+                </button>
+                <h2 style={{
+                    color: '#16a34a',
+                    fontWeight: 700,
+                    fontSize: 24,
+                    marginBottom: 24,
+                    textAlign: 'center'
+                }}>
+                    Admin Login
+                </h2>
+                <form style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <input
+                        type="text"
+                        placeholder="Username or Email"
+                        style={{
+                            width: '100%',
+                            padding: '12px 16px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: 8,
+                            fontSize: 16,
+                            boxSizing: 'border-box'
+                        }}
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        style={{
+                            width: '100%',
+                            padding: '12px 16px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: 8,
+                            fontSize: 16,
+                            boxSizing: 'border-box'
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        style={{
+                            background: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
+                            color: '#fff',
+                            fontWeight: 700,
+                            fontSize: 16,
+                            padding: '12px 0',
+                            border: 'none',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            marginTop: 8
+                        }}
+                    >
+                        Login
+                    </button>
+                </form>
+            </div>
+        </div>
+      )}
 
       {/* Features Drawer/Modal */}
       {showFeatures && (
@@ -1343,20 +1529,18 @@ const App: React.FC = () => {
           style={{
             position: "fixed",
             top: 0, right: 0, bottom: 0,
-            width: 320,
+            width: 420,
             background: "rgba(255, 255, 255, 0.98)",
-            backdropFilter: "blur(20px)",
             borderLeft: "1px solid rgba(34, 197, 94, 0.1)",
             boxShadow: "-4px 0 24px rgba(34, 197, 94, 0.1)",
             zIndex: 100,
             padding: 32,
             display: "flex",
-            flexDirection: "column",
-            animation: "slideIn 0.3s ease-out"
+            flexDirection: "column"
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <h2 style={{ color: "#8B4513", fontWeight: 700, fontSize: 20, margin: 0 }}>Features</h2>
+            <h2 style={{ color: "#8B4513", fontWeight: 700, fontSize: 20, margin: 0 }}>{t('features')}</h2>
             <button
               onClick={() => setShowFeatures(false)}
               style={{
@@ -1370,2374 +1554,311 @@ const App: React.FC = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: 6,
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(139, 69, 19, 0.1)";
-                e.currentTarget.style.color = "#8B4513";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#8B4513";
+                borderRadius: 6
               }}
               aria-label="Close"
             >×</button>
           </div>
-          <div style={{ 
-            flex: 1, 
-            overflowY: "auto", 
-            paddingRight: 8,
-            marginRight: -8
-          }}>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-              {features.map((feature, idx) => (
-                <li key={idx} style={{
-                  padding: "16px",
-                  background: "rgba(139, 69, 19, 0.05)",
-                  borderRadius: 12,
-                  border: "1px solid rgba(139, 69, 19, 0.1)",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease"
-                }}
+          <ul style={{ listStyle: "none", padding: "0 10px 0 0", margin: 0, display: "flex", flexDirection: "column", gap: 16, flex: 1, overflowY: 'auto' }}>
+            {features.map((feature, idx) => (
+              <li 
+                key={idx} 
                 onClick={() => {
-                  switch (feature.name) {
-                    case "Crop Suggestions":
-                      setShowCropSuggestions(true);
-                      break;
-                    case "Yield Prediction":
-                      setShowYieldPrediction(true);
-                      break;
-                    case "Irrigation Advice":
-                      setShowIrrigationAdvice(true);
-                      break;
-                    case "Equipment Guide":
-                      setShowEquipmentGuide(true);
-                      break;
-                    case "Cost Analysis":
-                      setShowCostAnalysis(true);
-                      break;
-                    case "Fertilizer Details":
-                      setShowFertilizerDetails(true);
-                      break;
-                    case "Government Schemes":
-                      setShowGovernmentSchemes(true);
-                      break;
-                    case "Harvest Planning":
-                      setShowHarvestPlanning(true);
-                      break;
-                    case "Weather Updates":
-                      setShowWeatherUpdates(true);
-                      break;
+                  if (feature.name === "Government Schemes") {
+                    handleShowSchemes();
+                  } else if (feature.name === "Irrigation Advice") {
+                    handleShowIrrigation();
+                  } else if (feature.name === "Crop Suggestions") {
+                    handleShowCropSuggestions();
+                  } else if (feature.name === "Equipment Guide") {
+                    handleShowEquipment();
+                  } else if (feature.name === "Cost Analysis") {
+                    handleShowCostAnalysis();
+                  } else if (feature.name === "Yield Prediction") {
+                    handleShowYieldPrediction();
+                  } else if (feature.name === "Weather Updates") {
+                    handleShowWeatherUpdates();
+                  } else if (feature.name === "Harvest Planning") {
+                    handleShowHarvestPlanning();
+                  } else if (feature.name === "Nearby Marketplace/Mandi") {
+                    handleShowMarketplace();
                   }
-                  setShowFeatures(false);
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(139, 69, 19, 0.1)";
-                  e.currentTarget.style.transform = "translateX(4px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(139, 69, 19, 0.05)";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 24 }}>{feature.icon}</span>
-                    <div>
-                      <div style={{ fontWeight: 600, color: "#8B4513", fontSize: 15 }}>{feature.name}</div>
-                      <div style={{ color: "#6B7280", fontSize: 13, marginTop: 2 }}>{feature.description}</div>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "28px 0",
+                  background: "rgba(139, 69, 19, 0.07)",
+                  borderRadius: 16,
+                  border: "1px solid rgba(139, 69, 19, 0.13)",
+                  cursor: "pointer",
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 20,
+                  justifyContent: 'center',
+                }}>
+                <span style={{ fontSize: 36, marginRight: 16 }}>{feature.icon}</span>
+                <span style={{ fontWeight: 700, color: "#8B4513", fontSize: 20, letterSpacing: '-0.01em' }}>{t(feature.name.replace(/ /g, '').replace('/', ''), feature.name)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      <main style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "40px 20px",
-        maxWidth: 1200,
-        margin: "0 auto"
-      }}>
-        {/* Hero Section */}
+      {/* Government Schemes Modal */}
+      {showSchemesModal && (
         <div style={{
-          textAlign: "center",
-          marginBottom: 48,
-          maxWidth: 600
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(0, 0, 0, 0.5)",
+          zIndex: 100,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
         }}>
-          <h1 style={{
-            color: "#16a34a",
-            fontWeight: 800,
-            fontSize: "clamp(32px, 5vw, 48px)",
-            lineHeight: 1.2,
-            marginBottom: 16,
-            letterSpacing: "-0.025em"
-          }}>
-            Smart Farming Solutions
-          </h1>
-          <p style={{
-            color: "#6B7280",
-            fontSize: 18,
-            lineHeight: 1.6,
-            margin: 0,
-            fontWeight: 400
-          }}>
-            Get AI-powered market analysis, price predictions, and harvest timing recommendations for your crops.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            background: "rgba(255, 255, 255, 0.9)",
-            backdropFilter: "blur(20px)",
-            borderRadius: 20,
-            border: "1px solid rgba(34, 197, 94, 0.1)",
-            boxShadow: "0 8px 32px rgba(34, 197, 94, 0.08)",
-            padding: "48px 40px",
-            minWidth: 400,
-            maxWidth: 500,
-            width: "100%",
+          <div style={{
+            background: "#fff",
+            borderRadius: 16,
+            width: "90%",
+            maxWidth: "1000px",
+            height: "90%",
             display: "flex",
             flexDirection: "column",
-            gap: 28
-          }}
-        >
-          <div>
-            <label htmlFor="state" style={{ 
-              color: "#16a34a", 
-              fontWeight: 600, 
-              fontSize: 14, 
-              marginBottom: 8, 
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}>
-              {t('Select Your State')}
-            </label>
-            <select
-              id="state"
-              value={state}
-              onChange={e => setState(e.target.value)}
-              style={{
-                width: "100%",
-                height: 52,
-                border: "2px solid rgba(34, 197, 94, 0.2)",
-                fontSize: 16,
-                fontWeight: 500,
-                borderRadius: 12,
-                padding: "0 16px",
-                background: "rgba(255, 255, 255, 0.9)",
-                color: "#16a34a",
-                outline: "none",
-                transition: "all 0.2s ease",
-                cursor: "pointer"
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#16a34a";
-                e.target.style.boxShadow = "0 0 0 3px rgba(34, 197, 94, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(34, 197, 94, 0.2)";
-                e.target.style.boxShadow = "none";
-              }}
-              required
-            >
-              <option value="">Select your state</option>
-              {INDIAN_STATES.map((stateOption) => (
-                <option key={stateOption.id} value={stateOption.id}>
-                  {stateOption.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="district" style={{ 
-              color: "#16a34a", 
-              fontWeight: 600, 
-              fontSize: 14, 
-              marginBottom: 8, 
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}>
-              {t('Enter your district')}
-            </label>
-            <input
-              id="district"
-              type="text"
-              value={district}
-              onChange={e => setDistrict(e.target.value)}
-              placeholder="Enter your district"
-              style={{
-                width: "100%",
-                height: 52,
-                border: "2px solid rgba(34, 197, 94, 0.2)",
-                fontSize: 16,
-                fontWeight: 500,
-                borderRadius: 12,
-                padding: "0 16px",
-                background: "rgba(255, 255, 255, 0.9)",
-                color: "#16a34a",
-                outline: "none",
-                transition: "all 0.2s ease"
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#16a34a";
-                e.target.style.boxShadow = "0 0 0 3px rgba(34, 197, 94, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(34, 197, 94, 0.2)";
-                e.target.style.boxShadow = "none";
-              }}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="crop" style={{ 
-              color: "#16a34a", 
-              fontWeight: 600, 
-              fontSize: 14, 
-              marginBottom: 8, 
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}>
-              {t('Crop Name')}
-            </label>
-            <input
-              id="crop"
-              type="text"
-              value={crop}
-              onChange={e => setCrop(e.target.value)}
-              placeholder="Enter crop name (e.g., wheat, rice, maize)"
-              style={{
-                width: "100%",
-                height: 52,
-                border: "2px solid rgba(34, 197, 94, 0.2)",
-                fontSize: 16,
-                fontWeight: 500,
-                borderRadius: 12,
-                padding: "0 16px",
-                background: "rgba(255, 255, 255, 0.9)",
-                color: "#16a34a",
-                outline: "none",
-                transition: "all 0.2s ease"
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#16a34a";
-                e.target.style.boxShadow = "0 0 0 3px rgba(34, 197, 94, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(34, 197, 94, 0.2)";
-                e.target.style.boxShadow = "none";
-              }}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="harvestingDate" style={{ 
-              color: "#16a34a", 
-              fontWeight: 600, 
-              fontSize: 14, 
-              marginBottom: 8, 
-              display: "block",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}>
-              {t('Harvesting Date')}
-            </label>
-            <input
-              id="harvestingDate"
-              type="date"
-              value={harvestingDate}
-              onChange={e => setHarvestingDate(e.target.value)}
-              style={{
-                width: "100%",
-                height: 52,
-                border: "2px solid rgba(34, 197, 94, 0.2)",
-                fontSize: 16,
-                fontWeight: 500,
-                borderRadius: 12,
-                padding: "0 16px",
-                background: "rgba(255, 255, 255, 0.9)",
-                color: "#16a34a",
-                outline: "none",
-                transition: "all 0.2s ease"
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#16a34a";
-                e.target.style.boxShadow = "0 0 0 3px rgba(34, 197, 94, 0.1)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(34, 197, 94, 0.2)";
-                e.target.style.boxShadow = "none";
-              }}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              height: 56,
-              background: loading ? "rgba(34, 197, 94, 0.3)" : "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 12,
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: loading ? "none" : "0 4px 12px rgba(34, 197, 94, 0.3)"
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(34, 197, 94, 0.4)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(34, 197, 94, 0.3)";
-              }
-            }}
-          >
-            {loading ? "Analyzing..." : t('Get Market Analysis')}
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            style={{
-              height: 48,
-              background: "transparent",
-              color: "#16a34a",
-              border: "2px solid rgba(34, 197, 94, 0.2)",
-              borderRadius: 12,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: "pointer",
-              transition: "all 0.2s ease"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(34, 197, 94, 0.05)";
-              e.currentTarget.style.borderColor = "#16a34a";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "rgba(139, 69, 19, 0.2)";
-            }}
-          >
-            {t('Reset Form')}
-          </button>
-        </form>
-
-        {/* Results Section */}
-        {result && (
-          <div style={{
-            marginTop: 48,
-            background: "rgba(255, 255, 255, 0.8)",
-            backdropFilter: "blur(20px)",
-            borderRadius: 20,
-            border: "1px solid rgba(34, 197, 94, 0.1)",
-            boxShadow: "0 8px 32px rgba(34, 197, 94, 0.08)",
-            padding: "40px 36px",
-            minWidth: 400,
-            maxWidth: 500,
-            width: "100%",
-            color: "#16a34a"
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)"
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-                borderRadius: 12,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontSize: 24
-              }}>
-                📊
-              </div>
-              <h2 style={{ color: "#16a34a", fontWeight: 700, fontSize: 24, margin: 0 }}>Market Analysis</h2>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "24px",
+              borderBottom: "1px solid #e2e8f0"
+            }}>
+              <h2 style={{ color: "#16a34a", fontWeight: 700, fontSize: 24, margin: 0 }}>🏛️ Government Schemes</h2>
+              <button
+                onClick={handleCloseSchemes}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 28,
+                  color: "#8B4513",
+                  cursor: "pointer",
+                  width: 40,
+                  height: 40,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 8
+                }}
+                aria-label="Close"
+              >×</button>
             </div>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              <div>
-                <h3 style={{ color: "#16a34a", fontWeight: 600, fontSize: 16, marginBottom: 12 }}>Nearby Marketplaces</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {result.markets.map((m: any, idx: number) => (
+            <div style={{
+              padding: "24px",
+              display: "flex",
+              gap: "20px",
+              borderBottom: "1px solid #e2e8f0"
+            }}>
+              <select 
+                value={schemesCategory} 
+                onChange={e => setSchemesCategory(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 8,
+                  fontSize: 16,
+                }}
+              >
+                {schemeCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              <input 
+                type="text"
+                placeholder="Search schemes..."
+                value={schemesSearch}
+                onChange={e => setSchemesSearch(e.target.value)}
+                style={{
+                  flex: 2,
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: 8,
+                  fontSize: 16,
+                }}
+              />
+            </div>
+
+            <div style={{
+              overflowY: "auto",
+              padding: "24px",
+              flex: 1
+            }}>
+              {filteredSchemes.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {filteredSchemes.map((scheme, idx) => (
                     <div key={idx} style={{
-                      padding: "12px 16px",
-                      background: "rgba(34, 197, 94, 0.05)",
-                      borderRadius: 8,
-                      border: "1px solid rgba(34, 197, 94, 0.1)"
+                      background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                      borderRadius: 12,
+                      border: "1px solid #bae6fd",
+                      padding: 24,
                     }}>
-                      <div style={{ fontWeight: 500, color: "#16a34a" }}>{m.name}</div>
-                      <div style={{ color: "#6B7280", fontSize: 14, marginTop: 2 }}>Distance: {m.distance}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div style={{
-                padding: "20px",
-                background: "linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.1) 100%)",
-                borderRadius: 12,
-                border: "1px solid rgba(34, 197, 94, 0.2)"
-              }}>
-                <h3 style={{ color: "#16a34a", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Expected Price Range</h3>
-                <div style={{ color: "#16a34a", fontWeight: 700, fontSize: 20 }}>
-                  ₹{result.price.min.toLocaleString()} - ₹{result.price.max.toLocaleString()} per quintal
-                </div>
-              </div>
-              
-              <div style={{
-                padding: "20px",
-                background: "linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%)",
-                borderRadius: 12,
-                border: "1px solid rgba(22, 163, 74, 0.2)"
-              }}>
-                <h3 style={{ color: "#16a34a", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Optimal Harvest Period</h3>
-                <div style={{ color: "#22c55e", fontWeight: 600, fontSize: 18 }}>{result.price.period}</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Crop Suggestions Modal */}
-      {showCropSuggestions && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🌱 Crop Suggestions</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>AI-powered crop recommendations based on your location and requirements</p>
-              </div>
-              <button
-                onClick={() => setShowCropSuggestions(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(16, 185, 129, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>{t('Smart Crop Recommendations')}</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  {t('Our AI analyzes your location, soil type, water availability, and market conditions to suggest the most profitable crops. Each recommendation includes detailed cost analysis, expected yields, and market potential.')}
-                </p>
-              </div>
-
-              {/* Crop Cards Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 24
-              }}>
-                {cropsWithEconomics.map((crop, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Crop Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+                        <span style={{ fontSize: 32, marginRight: 12 }}>{scheme.icon}</span>
                         <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {crop.icon} {crop.name}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{crop.description}</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <span style={{
-                            background: crop.marketPotential === "High" ? "rgba(16, 185, 129, 0.1)" : 
-                                       crop.marketPotential === "Medium" ? "rgba(245, 158, 11, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                            color: crop.marketPotential === "High" ? "#059669" : 
-                                   crop.marketPotential === "Medium" ? "#d97706" : "#dc2626",
-                            padding: "4px 12px",
-                            borderRadius: 20,
-                            fontSize: 12,
-                            fontWeight: 500
-                          }}>
-                            {crop.marketPotential} Market
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Crop Details */}
-                    <div style={{ padding: "24px" }}>
-                      {/* Growing Requirements */}
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Growing Requirements</h5>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                          <div>
-                            <span style={{ color: "#64748b", fontSize: 13 }}>Season:</span>
-                            <div style={{ color: "#1e293b", fontWeight: 500 }}>{crop.season}</div>
-                          </div>
-                          <div>
-                            <span style={{ color: "#64748b", fontSize: 13 }}>Duration:</span>
-                            <div style={{ color: "#1e293b", fontWeight: 500 }}>{crop.duration}</div>
-                          </div>
-                          <div>
-                            <span style={{ color: "#64748b", fontSize: 13 }}>Water Need:</span>
-                            <div style={{ color: "#1e293b", fontWeight: 500 }}>{crop.water}</div>
-                          </div>
-                          <div>
-                            <span style={{ color: "#64748b", fontSize: 13 }}>Soil Type:</span>
-                            <div style={{ color: "#1e293b", fontWeight: 500 }}>{crop.soil}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Economics Section */}
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Economics (per acre)</h5>
-                        <div style={{
-                          background: "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(29, 78, 216, 0.05) 100%)",
-                          borderRadius: 12,
-                          padding: 16,
-                          border: "1px solid rgba(59, 130, 246, 0.1)"
-                        }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                            <div>
-                              <span style={{ color: "#64748b", fontSize: 13 }}>Total Cost:</span>
-                              <div style={{ color: "#dc2626", fontWeight: 600 }}>₹{crop.totalCost.toLocaleString()}</div>
-                            </div>
-                            <div>
-                              <span style={{ color: "#64748b", fontSize: 13 }}>Expected Revenue:</span>
-                              <div style={{ color: "#059669", fontWeight: 600 }}>₹{crop.totalRevenue.toLocaleString()}</div>
-                            </div>
-                            <div>
-                              <span style={{ color: "#64748b", fontSize: 13 }}>Net Profit:</span>
-                              <div style={{ 
-                                color: crop.profit >= 0 ? "#059669" : "#dc2626", 
-                                fontWeight: 600 
-                              }}>
-                                ₹{crop.profit.toLocaleString()}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Cost Breakdown */}
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Cost Breakdown</h5>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          {Object.entries(crop.costBreakdown).map(([key, value]) => (
-                            <div key={key} style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ color: "#64748b", fontSize: 13, textTransform: "capitalize" }}>
-                                {key.replace(/([A-Z])/g, ' $1').trim()}:
-                              </span>
-                              <span style={{ color: "#1e293b", fontWeight: 500, fontSize: 13 }}>
-                                ₹{(value as number).toLocaleString()}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Investment Level */}
-                      <div style={{
-                        background: crop.investment === "Low" ? "rgba(16, 185, 129, 0.1)" : 
-                                   crop.investment === "Medium" ? "rgba(245, 158, 11, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                        borderRadius: 8,
-                        padding: "12px 16px",
-                        border: "1px solid",
-                        borderColor: crop.investment === "Low" ? "rgba(16, 185, 129, 0.2)" : 
-                                     crop.investment === "Medium" ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ color: "#64748b", fontSize: 14 }}>Investment Level:</span>
-                          <span style={{
-                            color: crop.investment === "Low" ? "#059669" : 
-                                   crop.investment === "Medium" ? "#d97706" : "#dc2626",
-                            fontWeight: 600,
-                            fontSize: 14
-                          }}>
-                            {crop.investment}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(59, 130, 246, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(59, 130, 246, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>{t('Tip')}:</strong> {t('Consider your local climate, soil conditions, and market demand when choosing crops. These recommendations are based on general conditions and may vary by specific location.')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cost Analysis Modal */}
-      {showCostAnalysis && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>💰 Cost Analysis</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Comprehensive cost analysis and financial planning tools</p>
-              </div>
-              <button
-                onClick={() => setShowCostAnalysis(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Crop-Specific Cost Analysis</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Detailed cost breakdown for each crop including seeds, fertilizers, labor, transportation, and other expenses. 
-                  Compare costs across different crops to make informed decisions.
-                </p>
-              </div>
-
-              {/* Crop Cost Breakdown Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                gap: 24
-              }}>
-                {cropsWithEconomics.map((crop, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Crop Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {crop.icon} {crop.name}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{crop.description}</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{
-                            background: "rgba(245, 158, 11, 0.1)",
-                            color: "#d97706",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
+                          <h4 style={{
+                            color: "#16a34a",
+                            fontWeight: 700,
+                            fontSize: 18,
+                            margin: 0,
                             marginBottom: 4
                           }}>
-                            Total Cost: ₹{crop.totalCost.toLocaleString()}
-                          </div>
-                          <div style={{
-                            background: crop.profit >= 0 ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                            color: crop.profit >= 0 ? "#059669" : "#dc2626",
-                            padding: "4px 12px",
-                            borderRadius: 20,
+                            {scheme.name}
+                          </h4>
+                          <span style={{
+                            background: "#16a34a",
+                            color: "#fff",
+                            padding: "4px 8px",
+                            borderRadius: 4,
                             fontSize: 12,
                             fontWeight: 600
                           }}>
-                            Profit: ₹{crop.profit.toLocaleString()}
-                          </div>
+                            {scheme.category}
+                          </span>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Cost Breakdown */}
-                    <div style={{ padding: "24px" }}>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>Cost Breakdown (per acre)</h5>
                       
-                      {/* Cost Categories */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {/* Seeds */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(16, 185, 129, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(16, 185, 129, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>🌱</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Seeds</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>High-quality certified seeds</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#059669", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.seeds.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Fertilizers */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(59, 130, 246, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(59, 130, 246, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>🌿</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Fertilizers</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>NPK and organic fertilizers</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#1d4ed8", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.fertilizers.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Pesticides */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(239, 68, 68, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(239, 68, 68, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>🛡️</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Pesticides</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Crop protection chemicals</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#dc2626", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.pesticides.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Irrigation */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(6, 182, 212, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(6, 182, 212, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>💧</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Irrigation</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Water management systems</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#0891b2", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.irrigation.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Labor */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(245, 158, 11, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(245, 158, 11, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>👨‍🌾</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Labor</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Manual and skilled labor</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#d97706", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.labor.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Machinery */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(107, 114, 128, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(107, 114, 128, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>🚜</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Machinery</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Equipment and implements</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#6b7280", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.machinery.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Transportation */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(168, 85, 247, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(168, 85, 247, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>🚚</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Transportation</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Input delivery and output transport</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#9333ea", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.transportation.toLocaleString()}
-                          </div>
-                        </div>
-
-                        {/* Miscellaneous */}
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "rgba(156, 163, 175, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(156, 163, 175, 0.1)"
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 20 }}>📋</span>
-                            <div>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14 }}>Miscellaneous</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Other expenses and contingencies</div>
-                            </div>
-                          </div>
-                          <div style={{ color: "#9ca3af", fontWeight: 600, fontSize: 14 }}>
-                            ₹{crop.costBreakdown.miscellaneous.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Summary Section */}
-                      <div style={{
-                        marginTop: 20,
-                        padding: "16px",
-                        background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                        borderRadius: 12,
-                        border: "1px solid rgba(245, 158, 11, 0.2)"
+                      <p style={{
+                        color: "#374151",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        marginBottom: 16
                       }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                          <div>
-                            <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>Total Cost</div>
-                            <div style={{ color: "#dc2626", fontSize: 18, fontWeight: 700 }}>
-                              ₹{crop.totalCost.toLocaleString()}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>Expected Revenue</div>
-                            <div style={{ color: "#059669", fontSize: 18, fontWeight: 700 }}>
-                              ₹{crop.totalRevenue.toLocaleString()}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>Net Profit</div>
-                            <div style={{ 
-                              color: crop.profit >= 0 ? "#059669" : "#dc2626", 
-                              fontSize: 18, 
-                              fontWeight: 700 
-                            }}>
-                              ₹{crop.profit.toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Tip:</strong> Compare costs across different crops to identify the most profitable options for your farm. 
-                  Consider local market conditions and your available resources when making decisions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Equipment Guide Modal */}
-      {showEquipmentGuide && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🚜 Equipment Guide</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Farming equipment recommendations based on your crop and location</p>
-              </div>
-              <button
-                onClick={() => setShowEquipmentGuide(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Equipment Recommendations</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Our AI recommends the best equipment for your specific crop and farming conditions. 
-                  This includes machinery, implements, and other tools tailored to your needs.
-                </p>
-              </div>
-
-              {/* Equipment Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                gap: 24
-              }}>
-                {equipmentList.map((eq, idx) => (
-                  <div key={idx} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}>
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <span style={{ fontSize: 32 }}>{eq.icon}</span>
+                        {scheme.description}
+                      </p>
+                      
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                         <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", margin: 0 }}>{eq.name}</h4>
-                          <div style={{ color: "#64748b", fontSize: 14 }}>{eq.category}</div>
+                          <strong style={{ color: "#16a34a", fontSize: 13 }}>Eligibility:</strong>
+                          <p style={{ fontSize: 13, margin: "4px 0 0 0", color: "#6B7280" }}>{scheme.eligibility}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: "#16a34a", fontSize: 13 }}>Benefits:</strong>
+                          <p style={{ fontSize: 13, margin: "4px 0 0 0", color: "#6B7280" }}>{scheme.benefits}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: "#16a34a", fontSize: 13 }}>Application:</strong>
+                          <p style={{ fontSize: 13, margin: "4px 0 0 0", color: "#6B7280" }}>{scheme.applicationProcess}</p>
+                        </div>
+                        <div>
+                          <strong style={{ color: "#16a34a", fontSize: 13 }}>Status:</strong>
+                          <span style={{
+                            background: "#dcfce7",
+                            color: "#16a34a",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 600
+                          }}>
+                            {scheme.status}
+                          </span>
                         </div>
                       </div>
+                      
+                      <a
+                        href={scheme.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+                          color: "#fff",
+                          textDecoration: "none",
+                          padding: "8px 16px",
+                          borderRadius: 6,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          display: "inline-block",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        Visit Website →
+                      </a>
                     </div>
-                    <div style={{ padding: 24 }}>
-                      <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: "#64748b", fontSize: 13 }}>Price Range:</span>
-                        <div style={{ color: "#1e293b", fontWeight: 500 }}>{eq.priceRange}</div>
-                      </div>
-                      <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: "#64748b", fontSize: 13 }}>Features:</span>
-                        <ul style={{ margin: 0, paddingLeft: 20 }}>
-                          {eq.features.map((f, i) => (
-                            <li key={i} style={{ color: "#64748b", fontSize: 14 }}>{f}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div style={{ marginBottom: 12 }}>
-                        <span style={{ color: "#64748b", fontSize: 13 }}>Suitable For:</span>
-                        <div style={{ color: "#059669", fontWeight: 500 }}>{eq.suitableFor.join(", ")}</div>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b", fontSize: 13 }}>Maintenance:</span>
-                        <div style={{ color: "#d97706", fontWeight: 500 }}>{eq.maintenance}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Tip:</strong> Consider your local climate, soil conditions, and market demand when choosing equipment. 
-                  These recommendations are based on general conditions and may vary by specific location.
-                </p>
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: "#6B7280", fontSize: 16 }}>
+                  No schemes found matching your criteria.
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Irrigation Advice Modal */}
-      {showIrrigationAdvice && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 900,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>💧 Irrigation Advice</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Smart, crop-specific water management recommendations</p>
-              </div>
-              <button
-                onClick={() => setShowIrrigationAdvice(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-            <div style={{ padding: 32 }}>
-              {/* Types of Irrigation Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(56, 189, 248, 0.15)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Types of Irrigation</h3>
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-                  gap: 20
-                }}>
-                  {irrigationTypes.map((type, idx) => (
-                    <div key={idx} style={{
-                      background: "#fff",
-                      borderRadius: 14,
-                      border: "1px solid #e2e8f0",
-                      boxShadow: "0 2px 8px rgba(56, 189, 248, 0.07)",
-                      padding: 20,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                        <span style={{ fontSize: 28 }}>{type.icon}</span>
-                        <span style={{ fontWeight: 700, fontSize: 18, color: "#0ea5e9" }}>{type.name}</span>
-                      </div>
-                      <div style={{ color: "#64748b", fontSize: 14, marginBottom: 4 }}><b>Cost:</b> {type.cost}</div>
-                      <div style={{ color: "#059669", fontSize: 14, marginBottom: 4 }}><b>Best for:</b> {type.suitableCrops.join(", ")}</div>
-                      <div style={{ color: "#1e293b", fontSize: 14, marginBottom: 4 }}><b>Advantages:</b>
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {type.advantages.map((adv, i) => <li key={i} style={{ color: "#059669" }}>{adv}</li>)}
-                        </ul>
-                      </div>
-                      <div style={{ color: "#dc2626", fontSize: 14, marginBottom: 4 }}><b>Disadvantages:</b>
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {type.disadvantages.map((dis, i) => <li key={i} style={{ color: "#dc2626" }}>{dis}</li>)}
-                        </ul>
-                      </div>
-                      <div style={{ color: "#64748b", fontSize: 13 }}><b>Notes:</b> {type.notes}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* More detailed, crop/region-specific advice will be added next */}
-            </div>
-          </div>
-        </div>
-      )}
+      <IrrigationAdviceModal 
+        show={showIrrigationModal} 
+        onClose={handleCloseIrrigation} 
+        advice={irrigationAdvice} 
+        categories={irrigationCategories} 
+      />
+
+      {/* Crop Suggestions Modal */}
+      <CropSuggestionsModal 
+        show={showCropSuggestionsModal} 
+        onClose={handleCloseCropSuggestions} 
+        crops={cropDatabase} 
+        categories={cropCategories} 
+      />
+
+      {/* Equipment Guide Modal */}
+      <EquipmentGuideModal
+        show={showEquipmentModal}
+        onClose={handleCloseEquipment}
+        equipment={equipmentGuide}
+        categories={equipmentCategories}
+      />
+
+      {/* Cost Analysis Modal */}
+      <CostAnalysisModal
+        show={showCostAnalysisModal}
+        onClose={handleCloseCostAnalysis}
+        crops={cropDatabase}
+        categories={cropCategories}
+      />
 
       {/* Yield Prediction Modal */}
-      {showYieldPrediction && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>📈 Yield Prediction</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>AI-powered yield forecasting based on crop, weather, and management factors</p>
-              </div>
-              <button
-                onClick={() => setShowYieldPrediction(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(16, 185, 129, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Smart Yield Forecasting</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Our AI analyzes multiple factors including weather patterns, soil conditions, crop variety, and management practices 
-                  to provide accurate yield predictions. These predictions help in planning harvest, storage, and marketing strategies.
-                </p>
-              </div>
-
-              {/* Yield Predictions Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 24
-              }}>
-                {cropsWithEconomics.map((crop, index) => {
-                  // Calculate predicted yield based on various factors
-                  const baseYield = crop.yieldPerAcre;
-                  const weatherFactor = 0.95; // Simulated weather impact
-                  const soilFactor = 1.02; // Simulated soil quality impact
-                  const managementFactor = 1.05; // Simulated management practices impact
-                  const predictedYield = Math.round(baseYield * weatherFactor * soilFactor * managementFactor);
-                  const confidence = Math.floor(Math.random() * 20) + 80; // 80-100% confidence
-                  
-                  return (
-                    <div key={index} style={{
-                      background: "#fff",
-                      borderRadius: 16,
-                      border: "1px solid #e2e8f0",
-                      overflow: "hidden",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                      transition: "all 0.2s ease"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                    }}
-                    >
-                      {/* Crop Header */}
-                      <div style={{
-                        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                        padding: "20px 24px",
-                        borderBottom: "1px solid #e2e8f0"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                          <div>
-                            <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                              {crop.icon} {crop.name}
-                            </h4>
-                            <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{crop.description}</p>
-                          </div>
-                          <div style={{ textAlign: "right" }}>
-                            <div style={{
-                              background: confidence >= 90 ? "rgba(16, 185, 129, 0.1)" : 
-                                         confidence >= 80 ? "rgba(245, 158, 11, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                              color: confidence >= 90 ? "#059669" : 
-                                     confidence >= 80 ? "#d97706" : "#dc2626",
-                              padding: "4px 12px",
-                              borderRadius: 20,
-                              fontSize: 12,
-                              fontWeight: 600
-                            }}>
-                              {confidence}% Confidence
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Yield Prediction Details */}
-                      <div style={{ padding: "24px" }}>
-                        {/* Prediction Summary */}
-                        <div style={{ marginBottom: 20 }}>
-                          <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Yield Prediction (per acre)</h5>
-                          <div style={{
-                            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)",
-                            borderRadius: 12,
-                            padding: 16,
-                            border: "1px solid rgba(16, 185, 129, 0.2)"
-                          }}>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                              <div>
-                                <span style={{ color: "#64748b", fontSize: 13 }}>Historical Average:</span>
-                                <div style={{ color: "#1e293b", fontWeight: 600 }}>{baseYield} {crop.name === "Vegetables" || crop.name === "Fruits" ? "tons" : "quintals"}</div>
-                              </div>
-                              <div>
-                                <span style={{ color: "#64748b", fontSize: 13 }}>Predicted Yield:</span>
-                                <div style={{ color: "#059669", fontWeight: 600, fontSize: 18 }}>
-                                  {predictedYield} {crop.name === "Vegetables" || crop.name === "Fruits" ? "tons" : "quintals"}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Factors Affecting Yield */}
-                        <div style={{ marginBottom: 20 }}>
-                          <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Factors Affecting Yield</h5>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                            <div style={{
-                              padding: "12px",
-                              background: "rgba(59, 130, 246, 0.05)",
-                              borderRadius: 8,
-                              border: "1px solid rgba(59, 130, 246, 0.1)"
-                            }}>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Weather Conditions</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Optimal rainfall and temperature patterns</div>
-                            </div>
-                            <div style={{
-                              padding: "12px",
-                              background: "rgba(245, 158, 11, 0.05)",
-                              borderRadius: 8,
-                              border: "1px solid rgba(245, 158, 11, 0.1)"
-                            }}>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Soil Quality</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Good soil fertility and structure</div>
-                            </div>
-                            <div style={{
-                              padding: "12px",
-                              background: "rgba(16, 185, 129, 0.05)",
-                              borderRadius: 8,
-                              border: "1px solid rgba(16, 185, 129, 0.1)"
-                            }}>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Management Practices</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Timely operations and proper care</div>
-                            </div>
-                            <div style={{
-                              padding: "12px",
-                              background: "rgba(168, 85, 247, 0.05)",
-                              borderRadius: 8,
-                              border: "1px solid rgba(168, 85, 247, 0.1)"
-                            }}>
-                              <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Pest & Disease Control</div>
-                              <div style={{ color: "#64748b", fontSize: 12 }}>Effective protection measures</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Optimization Tips */}
-                        <div style={{
-                          background: "rgba(245, 158, 11, 0.05)",
-                          borderRadius: 12,
-                          padding: 16,
-                          border: "1px solid rgba(245, 158, 11, 0.1)"
-                        }}>
-                          <h6 style={{ color: "#1e293b", fontWeight: 600, fontSize: 14, marginBottom: 8 }}>💡 Yield Optimization Tips</h6>
-                          <ul style={{ margin: 0, paddingLeft: 20 }}>
-                            <li style={{ color: "#64748b", fontSize: 13, marginBottom: 4 }}>Use high-quality seeds and optimal spacing</li>
-                            <li style={{ color: "#64748b", fontSize: 13, marginBottom: 4 }}>Apply balanced fertilizers based on soil testing</li>
-                            <li style={{ color: "#64748b", fontSize: 13, marginBottom: 4 }}>Implement proper irrigation scheduling</li>
-                            <li style={{ color: "#64748b", fontSize: 13 }}>Monitor and control pests/diseases early</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(16, 185, 129, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(16, 185, 129, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Note:</strong> Yield predictions are based on historical data and current conditions. 
-                  Actual yields may vary due to unforeseen weather events or management changes. 
-                  Regular monitoring and adaptive management are recommended.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Government Schemes Modal */}
-      {showGovernmentSchemes && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🏛️ Government Schemes</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Subsidies and support programs for farmers</p>
-              </div>
-              <button
-                onClick={() => setShowGovernmentSchemes(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Government Support for Farmers</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  The Government of India offers various schemes and subsidies to support farmers and improve agricultural productivity. 
-                  These programs provide financial assistance, technical support, and infrastructure development.
-                </p>
-              </div>
-
-              {/* Schemes Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                gap: 24
-              }}>
-                {governmentSchemes.map((scheme, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Scheme Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {scheme.icon} {scheme.name}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{scheme.fullName}</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{
-                            background: scheme.status === "Active" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                            color: scheme.status === "Active" ? "#059669" : "#dc2626",
-                            padding: "4px 12px",
-                            borderRadius: 20,
-                            fontSize: 12,
-                            fontWeight: 600
-                          }}>
-                            {scheme.status}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Scheme Details */}
-                    <div style={{ padding: "24px" }}>
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>Description</h5>
-                        <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5, margin: 0 }}>{scheme.description}</p>
-                      </div>
-
-                      {/* Benefits */}
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Key Benefits</h5>
-                        <ul style={{ margin: 0, paddingLeft: 20 }}>
-                          {scheme.benefits.map((benefit, idx) => (
-                            <li key={idx} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>
-                              {benefit}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Eligibility */}
-                      <div style={{ marginBottom: 20 }}>
-                        <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Eligibility Criteria</h5>
-                        <ul style={{ margin: 0, paddingLeft: 20 }}>
-                          {scheme.eligibility.map((criteria, idx) => (
-                            <li key={idx} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>
-                              {criteria}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Application Info */}
-                      <div style={{
-                        background: "rgba(245, 158, 11, 0.05)",
-                        borderRadius: 12,
-                        padding: 16,
-                        border: "1px solid rgba(245, 158, 11, 0.1)"
-                      }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          <div>
-                            <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>Application Process</div>
-                            <div style={{ color: "#1e293b", fontSize: 14, fontWeight: 500 }}>{scheme.applicationProcess}</div>
-                          </div>
-                          <div>
-                            <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>Official Website</div>
-                            <div style={{ color: "#16a34a", fontSize: 14, fontWeight: 500 }}>{scheme.website}</div>
-                            <a href={`https://${scheme.website}`} target="_blank" rel="noopener noreferrer" style={{
-                              display: "inline-block",
-                              marginTop: 8,
-                              padding: "8px 16px",
-                              background: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
-                              color: "#fff",
-                              borderRadius: 8,
-                              fontWeight: 600,
-                              fontSize: 14,
-                              textDecoration: "none",
-                              boxShadow: "0 2px 8px rgba(34, 197, 94, 0.08)",
-                              transition: "all 0.2s ease"
-                            }}>
-                              Go to Official Website
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Important:</strong> Always verify scheme details from official government websites before applying. 
-                  Scheme benefits and eligibility criteria may vary by state and are subject to change.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Harvest Planning Modal */}
-      {showHarvestPlanning && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🌾 Harvest Planning</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Optimal harvest timing, storage, and post-harvest management strategies</p>
-              </div>
-              <button
-                onClick={() => setShowHarvestPlanning(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Introduction Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Harvest Planning Tips</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Our AI provides insights into optimal harvest timing, storage conditions, and post-harvest management strategies for your crops.
-                </p>
-              </div>
-
-              {/* Tips Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 24
-              }}>
-                {harvestPlanningData.crops.map((crop, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Crop Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {crop.icon} {crop.name}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>Harvest Planning Guide</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{
-                            background: "rgba(245, 158, 11, 0.1)",
-                            color: "#d97706",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 4
-                          }}>
-                            Optimal Harvest Period: {crop.harvestTiming.optimal}
-                          </div>
-                          <div style={{
-                            background: "rgba(16, 185, 129, 0.1)",
-                            color: "#059669",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 4
-                          }}>
-                            Storage Conditions: {crop.storage.conditions}
-                          </div>
-                          <div style={{
-                            background: "rgba(239, 68, 68, 0.1)",
-                            color: "#dc2626",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 4
-                          }}>
-                            Market Analysis: {crop.marketAnalysis.peakPrices}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tips Section */}
-                    <div style={{ padding: "24px" }}>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>General Tips</h5>
-                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                        {harvestPlanningData.generalTips.timing.map((tip, index) => (
-                          <li key={index} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>{tip}</li>
-                        ))}
-                      </ul>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12, marginTop: 20 }}>Equipment Tips</h5>
-                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                        {harvestPlanningData.generalTips.equipment.map((tip, index) => (
-                          <li key={index} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>{tip}</li>
-                        ))}
-                      </ul>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12, marginTop: 20 }}>Labor Tips</h5>
-                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                        {harvestPlanningData.generalTips.labor.map((tip, index) => (
-                          <li key={index} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>{tip}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Tip:</strong> Consider your local climate, soil conditions, and market demand when planning your harvest. 
-                  These strategies are based on general conditions and may need adjustments for specific locations.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <YieldPredictionModal
+        show={showYieldPredictionModal}
+        onClose={handleCloseYieldPrediction}
+        crops={cropDatabase}
+        categories={cropCategories}
+      />
 
       {/* Weather Updates Modal */}
-      {showWeatherUpdates && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🌤️ Weather Updates</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Real-time weather data, forecasts, and farming-specific weather alerts</p>
-              </div>
-              <button
-                onClick={() => setShowWeatherUpdates(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
+      <WeatherUpdatesModal
+        show={showWeatherUpdatesModal}
+        onClose={handleCloseWeatherUpdates}
+        crops={cropDatabase}
+        categories={cropCategories}
+      />
 
-            <div style={{ padding: 32 }}>
-              {/* Weather Data Section */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Weather Information</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Our AI provides real-time weather data, forecasts, and alerts tailored to your specific crop and farming conditions.
-                </p>
-              </div>
+      {/* Harvest Planning Modal */}
+      <HarvestPlanningModal
+        show={showHarvestPlanningModal}
+        onClose={handleCloseHarvestPlanning}
+        crops={cropDatabase}
+        categories={cropCategories}
+      />
 
-              {/* Weather Data Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 24
-              }}>
-                {weatherData.cropSpecificWeather.map((crop, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Crop Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {crop.icon} {crop.crop}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>Harvest Planning Guide</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{
-                            background: crop.currentStatus === "Optimal" ? "rgba(16, 185, 129, 0.1)" : 
-                                        crop.currentStatus === "Good" ? "rgba(59, 130, 246, 0.1)" : "rgba(245, 158, 11, 0.1)",
-                            color: crop.currentStatus === "Optimal" ? "#059669" : 
-                                   crop.currentStatus === "Good" ? "#2563eb" : "#d97706",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 4
-                          }}>
-                            Status: {crop.currentStatus}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+      {/* Nearby Marketplace Modal */}
+      <NearbyMarketplaceModal
+        show={showMarketplaceModal}
+        onClose={handleCloseMarketplace}
+      />
 
-                    {/* Weather Data Details */}
-                    <div style={{ padding: "24px" }}>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Optimal Conditions</h5>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                        <div style={{
-                          padding: "12px",
-                          background: "rgba(59, 130, 246, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(59, 130, 246, 0.1)"
-                        }}>
-                          <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Temperature</div>
-                          <div style={{ color: "#64748b", fontSize: 12 }}>{crop.optimalConditions.temperature}</div>
-                        </div>
-                        <div style={{
-                          padding: "12px",
-                          background: "rgba(245, 158, 11, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(245, 158, 11, 0.1)"
-                        }}>
-                          <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Humidity</div>
-                          <div style={{ color: "#64748b", fontSize: 12 }}>{crop.optimalConditions.humidity}</div>
-                        </div>
-                        <div style={{
-                          padding: "12px",
-                          background: "rgba(16, 185, 129, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(16, 185, 129, 0.1)"
-                        }}>
-                          <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Rainfall</div>
-                          <div style={{ color: "#64748b", fontSize: 12 }}>{crop.optimalConditions.rainfall}</div>
-                        </div>
-                        <div style={{
-                          padding: "12px",
-                          background: "rgba(168, 85, 247, 0.05)",
-                          borderRadius: 8,
-                          border: "1px solid rgba(168, 85, 247, 0.1)"
-                        }}>
-                          <div style={{ color: "#1e293b", fontWeight: 500, fontSize: 14, marginBottom: 4 }}>Wind Speed</div>
-                          <div style={{ color: "#64748b", fontSize: 12 }}>{crop.optimalConditions.windSpeed}</div>
-                        </div>
-                      </div>
-                      
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12, marginTop: 20 }}>Recommendations</h5>
-                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                        {crop.recommendations.map((rec, idx) => (
-                          <li key={idx} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>{rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Tip:</strong> Stay informed about weather conditions and adjust your farming strategies accordingly. 
-                  These insights help in planning harvest, storage, and marketing strategies.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Fertilizer Details Modal */}
-      {showFertilizerDetails && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 24,
-            maxWidth: 1200,
-            width: "100%",
-            maxHeight: "90vh",
-            overflow: "auto",
-            position: "relative"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              padding: "24px 32px",
-              borderRadius: "24px 24px 0 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <h2 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>🌿 Fertilizer Details</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: 0.9 }}>Comprehensive information on fertilizers, usage, and best practices</p>
-              </div>
-              <button
-                onClick={() => setShowFertilizerDetails(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: 8,
-                  width: 40,
-                  height: 40,
-                  color: "#fff",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >×</button>
-            </div>
-
-            <div style={{ padding: 32 }}>
-              {/* Fertilizer Information */}
-              <div style={{
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 32,
-                border: "1px solid rgba(245, 158, 11, 0.2)"
-              }}>
-                <h3 style={{ color: "#1e293b", fontSize: 20, fontWeight: 600, marginBottom: 12 }}>Fertilizer Information</h3>
-                <p style={{ color: "#64748b", lineHeight: 1.6, margin: 0 }}>
-                  Our AI provides detailed information about fertilizers, including their types, benefits, and best practices for your specific crop.
-                </p>
-              </div>
-
-              {/* Fertilizer Grid */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 24
-              }}>
-                {cropsWithEconomics.map((crop, index) => (
-                  <div key={index} style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-                    transition: "all 0.2s ease"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0, 0, 0, 0.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.05)";
-                  }}
-                  >
-                    {/* Crop Header */}
-                    <div style={{
-                      background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-                      padding: "20px 24px",
-                      borderBottom: "1px solid #e2e8f0"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                        <div>
-                          <h4 style={{ fontSize: 20, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>
-                            {crop.icon} {crop.name}
-                          </h4>
-                          <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>{crop.description}</p>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{
-                            background: "rgba(245, 158, 11, 0.1)",
-                            color: "#d97706",
-                            padding: "6px 12px",
-                            borderRadius: 20,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            marginBottom: 4
-                          }}>
-                            Fertilizer Recommendations: {crop.fertilizerRecommendations}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fertilizer Details */}
-                    <div style={{ padding: "24px" }}>
-                      <h5 style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Fertilizer Details</h5>
-                      <ul style={{ margin: 0, paddingLeft: 20 }}>
-                        {crop.fertilizerDetails.map((detail: string, idx: number) => (
-                          <li key={idx} style={{ color: "#64748b", fontSize: 14, marginBottom: 6 }}>{detail}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer Note */}
-              <div style={{
-                marginTop: 32,
-                padding: 20,
-                background: "rgba(245, 158, 11, 0.05)",
-                borderRadius: 12,
-                border: "1px solid rgba(245, 158, 11, 0.1)",
-                textAlign: "center"
-              }}>
-                <p style={{ color: "#64748b", margin: 0, fontSize: 14 }}>
-                  💡 <strong>Tip:</strong> Follow our AI-recommended fertilization schedule for optimal crop growth.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
-      {/* Language Selector (Bottom Left) */}
-      <div style={{
-        position: "fixed",
-        left: 24,
-        bottom: 24,
-        zIndex: 2000,
-        background: "rgba(255,255,255,0.95)",
-        border: "1px solid #bae6fd",
-        borderRadius: 10,
-        boxShadow: "0 2px 8px rgba(34,197,94,0.08)",
-        padding: "10px 18px",
-        display: "flex",
-        alignItems: "center",
-        gap: 10
-      }}>
-        <span style={{ color: "#16a34a", fontWeight: 600, fontSize: 14 }}>{t('Language:')}</span>
-        <select
-          value={language}
-          onChange={e => setLanguage(e.target.value)}
-          style={{
-            border: "1px solid #bae6fd",
-            borderRadius: 6,
-            padding: "4px 10px",
-            fontSize: 14,
-            color: "#16a34a",
-            background: "#fff",
-            outline: "none"
-          }}
-        >
-          <option value="en">English</option>
-          <option value="hi">हिन्दी</option>
-          <option value="bn">বাংলা</option>
-          <option value="ta">தமிழ்</option>
-          <option value="te">తెలుగు</option>
-          <option value="mr">मराठी</option>
-          <option value="gu">ગુજરાતી</option>
-          <option value="ml">മലയാളം</option>
-          <option value="kn">ಕನ್ನಡ</option>
-          <option value="or">ଓଡ଼ିଆ</option>
-          <option value="pa">ਪੰਜਾਬੀ</option>
-          <option value="as">অসমীয়া</option>
-          <option value="ur">اردو</option>
-          <option value="ne">नेपाली</option>
-          <option value="ks">کٲشُر</option>
-          <option value="kok">कोंकणी</option>
-          <option value="sd">سنڌي</option>
-          <option value="doi">डोगरी</option>
-          <option value="mni">মৈতৈলোন্</option>
-          <option value="brx">बड़ो</option>
-        </select>
-      </div>
     </div>
   );
 };
