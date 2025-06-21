@@ -7,17 +7,8 @@ import random
 
 app = Flask(__name__)
 
-# More robust CORS configuration
-CORS(app, 
-     origins=["http://localhost:5173", 
-              "https://arnavgarhwal.github.io",
-              "https://ai-farmer-new.onrender.com"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=True)
-
-# Alternative: Allow all origins for development (less secure but easier)
-# CORS(app, origins="*", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+# Use permissive CORS for now to ensure it works
+CORS(app, origins="*", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Simple file-based storage
 DATA_FILE = "data.json"
@@ -108,18 +99,26 @@ def initialize_data():
 # Initialize data on startup
 initialize_data()
 
-@app.route('/', methods=['GET', 'OPTIONS'])
+@app.route('/')
 def home():
-    if request.method == 'OPTIONS':
-        return '', 200
     # Record a visit when someone accesses the home page
     record_visit()
     return jsonify({"message": "AI Farmer Backend API", "status": "running"})
 
+@app.route('/api/test-cors', methods=['GET', 'POST', 'OPTIONS'])
+def test_cors():
+    """Test endpoint to verify CORS is working"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    return jsonify({"message": "CORS is working!", "method": request.method})
+
 @app.route('/api/track-visit', methods=['POST', 'OPTIONS'])
 def track_visit():
     """Track a new visit"""
+    print(f"Track visit called with method: {request.method}")
+    print(f"Headers: {dict(request.headers)}")
     if request.method == 'OPTIONS':
+        print("Handling OPTIONS request for track-visit")
         return '', 200
     try:
         record_visit()
@@ -131,7 +130,9 @@ def track_visit():
 @app.route('/api/visitor-stats', methods=['GET', 'OPTIONS'])
 def visitor_stats():
     """Get real visitor statistics"""
+    print(f"Visitor stats called with method: {request.method}")
     if request.method == 'OPTIONS':
+        print("Handling OPTIONS request for visitor-stats")
         return '', 200
     try:
         stats = get_visitor_stats()
@@ -142,7 +143,10 @@ def visitor_stats():
 
 @app.route('/api/admin/login', methods=['POST', 'OPTIONS'])
 def admin_login():
+    print(f"Admin login called with method: {request.method}")
+    print(f"Headers: {dict(request.headers)}")
     if request.method == 'OPTIONS':
+        print("Handling OPTIONS request for admin-login")
         return '', 200
     try:
         data = request.get_json()
