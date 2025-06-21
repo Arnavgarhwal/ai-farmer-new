@@ -7,7 +7,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Allow requests specifically from your frontend's domain
+cors_origins = [
+    "http://localhost:5173",  # For local development
+    "https://arnavgarhwal.github.io"  # For your deployed frontend
+]
+CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
 # --- Database Connection ---
 try:
