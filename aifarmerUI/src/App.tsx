@@ -8,6 +8,7 @@ import MLPricePredictionModal from "./MLPricePredictionModal";
 import WeatherUpdatesModal from "./WeatherUpdatesModal";
 import HarvestPlanningModal from "./HarvestPlanningModal";
 import NearbyMarketplaceModal from "./NearbyMarketplaceModal";
+import PricePredictionResults from "./PricePredictionResults";
 import AdminDashboard from "./AdminDashboard";
 import i18n from "./i18n";
 import { useTranslation } from 'react-i18next';
@@ -873,7 +874,6 @@ const equipmentCategories = ["All", "Machinery", "Crop Care", "Planting", "Energ
 const features = [
   { name: "Crop Suggestions", icon: "🌾" },
   { name: "Yield Prediction", icon: "📊" },
-  { name: "ML Price Prediction", icon: "🤖" },
   { name: "Irrigation Advice", icon: "💧" },
   { name: "Equipment Guide", icon: "🚜" },
   { name: "Cost Analysis", icon: "💰" },
@@ -955,6 +955,9 @@ const App: React.FC = () => {
   // Nearby Marketplace Modal State
   const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
 
+  // Price Prediction Results Page State
+  const [showPricePredictionResults, setShowPricePredictionResults] = useState(false);
+
   // Admin Login Modal State
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [adminUsername, setAdminUsername] = useState("");
@@ -1016,7 +1019,15 @@ const App: React.FC = () => {
     console.log("District:", userDistrict);
     console.log("Crop Name:", cropName);
     console.log("Harvesting Date:", harvestingDate);
-    // Here you can add logic to process the form data
+    
+    // Validate required fields
+    if (!userState || !userDistrict || !cropName || !harvestingDate) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Redirect to price prediction results page
+    setShowPricePredictionResults(true);
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -1156,6 +1167,10 @@ const App: React.FC = () => {
     setShowMarketplaceModal(false);
   };
 
+  const handleBackFromPriceResults = () => {
+    setShowPricePredictionResults(false);
+  };
+
   const filteredSchemes = governmentSchemes.filter(scheme => {
     const categoryMatch = schemesCategory === "All Categories" || scheme.category === schemesCategory;
     const searchMatch = scheme.name.toLowerCase().includes(schemesSearch.toLowerCase()) || 
@@ -1171,6 +1186,14 @@ const App: React.FC = () => {
     }}>
       {isAdminLoggedIn ? (
         <AdminDashboard />
+      ) : showPricePredictionResults ? (
+        <PricePredictionResults
+          cropName={cropName}
+          state={userState}
+          district={userDistrict}
+          harvestDate={harvestingDate}
+          onBack={handleBackFromPriceResults}
+        />
       ) : (
         <>
           <div style={{ maxWidth: 840, margin: '0 auto', padding: '0 20px' }}>
@@ -1937,6 +1960,10 @@ const App: React.FC = () => {
       <MLPricePredictionModal
         show={showMLPricePredictionModal}
         onClose={handleCloseMLPricePrediction}
+        cropName={cropName}
+        state={userState}
+        district={userDistrict}
+        harvestDate={harvestingDate}
       />
 
       {/* Weather Updates Modal */}
